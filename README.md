@@ -1,5 +1,5 @@
 # kodawari
-[![Hits-of-Code](https://hitsofcode.com/github/ZacharyGroff/kodawari)](https://hitsofcode.com/view/github/ZacharyGroff/kodawari)
+[![Hits-of-Code](https://hitsofcode.com/github/zacharygroff/kodawari?branch=main)](https://hitsofcode.com/github/zacharygroff/kodawari/view?branch=main)
 
 Kodawari implements the backend for a mock social media platform geared towards chefs and home cooks who enjoy managing and iterating on their recipes.
 ## Table of Contents
