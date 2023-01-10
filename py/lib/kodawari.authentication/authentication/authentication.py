@@ -12,21 +12,45 @@ _security_scheme = HTTPBearer()
 
 
 class BearerValidationException(Exception):
+    """The access token from a request has failed validation."""
+
     def __init__(self, token: str) -> None:
         super().__init__(f'Failed to validate token: ${token}')
 
 
 class SecretEnvironmentVariableException(Exception):
+    """The secret environment variable is not set."""
+
     def __init__(self) -> None:
         super().__init__(f'Failed to retrieve {_secret_environment_variable}')
 
 
 class BearerClaims(BaseModel):
+    """ A dataclass containing properties from an access token.
+
+    Attributes:
+        id: The id of the user issuing a request.
+        expiry: The expiration date of the request access token, expressed as a Unix timestamp in seconds.
+    """
     id: int
     expiry: int
 
 
 def validate_bearer(token: str) -> BearerClaims:
+    """Validates bearer tokens
+
+    Validates bearer tokens by decrypting the encrypted token and validating the token is not expired.
+
+    Args:
+        token: An encrypted token.
+
+    Returns:
+        A BearerClaims object containing claims from the encrypted token.
+
+    Raises:
+        SecretEnvironmentVariableException: The secret environment variable was unable to be retrieved.
+        BearerValidationException: The token was expired.
+    """
     secret: str | None = getenv(_secret_environment_variable)
     if secret is None:
         raise SecretEnvironmentVariableException
@@ -43,6 +67,20 @@ def validate_bearer(token: str) -> BearerClaims:
 
 
 async def authenticate(credentials: HTTPAuthorizationCredentials = Depends(_security_scheme)) -> BearerClaims:
+    """Authenticates user credentials.
+
+    Authenticates user credentials by decrypting the JWT included on the HTTPAuthorizationCredentials and validating the expiry.
+
+    Args:
+        credentials: The HTTPAuthorizationCredentials provided in a request, containing a Bearer Token property (credentials).
+
+    Returns:
+        A BearerClaims object containing claims from the Bearer Token.
+
+    Raises:
+        HTTPException: The user was unauthorized or an internal server error occurred while processing the request.
+    """
+
     token = credentials.credentials
     try:
         bearer_claims: BearerClaims = validate_bearer(token)

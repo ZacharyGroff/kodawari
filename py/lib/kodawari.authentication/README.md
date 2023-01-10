@@ -5,7 +5,6 @@ As it stands, Kodawari APIs only expect a Bearer Token with an id claim and an e
 
 
 ### Installation
-___
 Authentication is installed using [poetry](https://python-poetry.org/docs/) with [path dependencies](https://python-poetry.org/docs/dependency-specification/#path-dependencies) in editable mode.
 
 ```console
@@ -13,7 +12,6 @@ $ poetry add --editable ./path/to/kodawari.authentication
 ```
 
 ### Usage
-___
 ```python
 from authentication.authentication import BearerClaims, authenticate
 from fastapi import FastAPI
