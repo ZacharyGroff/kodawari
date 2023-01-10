@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "kodawari.authentication"
+version = "0.1.0"
+description = "An authentication package providing a FastAPI Depedency to validate access tokens"
+authors = ["Zachary Groff <groff.zackm@gmail.com>"]
+readme = "README.md"
+packages = [{include = 'authentication'}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.89.1"
+pydantic = "^1.10.4"
+PyJWT = "^2.6.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
+pytest-asyncio = "^0.20.3"
+httpx = "^0.23.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
