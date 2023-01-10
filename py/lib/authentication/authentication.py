@@ -1,7 +1,7 @@
 from datetime import datetime
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt import decode
+from jwt import InvalidSignatureError, decode
 from pydantic import BaseModel
 from os import getenv
 from typing import Any, Dict
@@ -47,7 +47,7 @@ async def authenticate(credentials: HTTPAuthorizationCredentials = Depends(_secu
     try:
         bearer_claims: BearerClaims = validate_bearer(token)
         return bearer_claims
-    except BearerValidationException:
+    except (BearerValidationException, InvalidSignatureError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     except:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
