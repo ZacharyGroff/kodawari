@@ -1,13 +1,14 @@
 from datetime import datetime
-from fastapi import HTTPException, Depends, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt import InvalidSignatureError, decode
-from pydantic import BaseModel
 from os import getenv
 from typing import Any, Dict
 
-_secret_environment_variable = 'KODAWARI_SECRET_KEY'
-_bearer_token_algorithms = ['HS256']
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import InvalidSignatureError, decode
+from pydantic import BaseModel
+
+_secret_environment_variable = "KODAWARI_SECRET_KEY"
+_bearer_token_algorithms = ["HS256"]
 _security_scheme = HTTPBearer()
 
 
@@ -15,23 +16,24 @@ class BearerValidationException(Exception):
     """The access token from a request has failed validation."""
 
     def __init__(self, token: str) -> None:
-        super().__init__(f'Failed to validate token: ${token}')
+        super().__init__(f"Failed to validate token: ${token}")
 
 
 class SecretEnvironmentVariableException(Exception):
     """The secret environment variable is not set."""
 
     def __init__(self) -> None:
-        super().__init__(f'Failed to retrieve {_secret_environment_variable}')
+        super().__init__(f"Failed to retrieve {_secret_environment_variable}")
 
 
 class BearerClaims(BaseModel):
-    """ A dataclass containing properties from an access token.
+    """A dataclass containing properties from an access token.
 
     Attributes:
         id: The id of the user issuing a request.
         expiry: The expiration date of the request access token, expressed as a Unix timestamp in seconds.
     """
+
     id: int
     expiry: int
 
@@ -56,7 +58,8 @@ def validate_bearer(token: str) -> BearerClaims:
         raise SecretEnvironmentVariableException
 
     decoded_json: Dict[str, Any] = decode(
-        token, key=secret, algorithms=_bearer_token_algorithms)
+        token, key=secret, algorithms=_bearer_token_algorithms
+    )
     bearer_claims: BearerClaims = BearerClaims(**decoded_json)
 
     ms_since_epoch: int = int(datetime.now().timestamp())
@@ -66,7 +69,9 @@ def validate_bearer(token: str) -> BearerClaims:
     return bearer_claims
 
 
-async def authenticate(credentials: HTTPAuthorizationCredentials = Depends(_security_scheme)) -> BearerClaims:
+async def authenticate(
+    credentials: HTTPAuthorizationCredentials = Depends(_security_scheme),
+) -> BearerClaims:
     """Authenticates user credentials.
 
     Authenticates user credentials by decrypting the JWT included on the HTTPAuthorizationCredentials and validating the expiry.
