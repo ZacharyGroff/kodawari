@@ -89,7 +89,7 @@ async def test_validate_raises_bearer_validation_exception() -> None:
 
         with pytest.raises(HTTPException) as ex:
             await authenticate(credentials=authorization_credentials)
-            assert status.HTTP_401_UNAUTHORIZED == ex.status_code
+            assert status.HTTP_401_UNAUTHORIZED == ex.status_code  # type: ignore
 
         validate_bearer_mock.assert_called_once_with(expected_credentials)
 
@@ -105,7 +105,7 @@ async def test_validation_raises_unexpected_exception() -> None:
 
         with pytest.raises(HTTPException) as ex:
             await authenticate(credentials=authorization_credentials)
-            assert status.HTTP_500_INTERNAL_SERVER_ERROR == ex.status_code
+            assert status.HTTP_500_INTERNAL_SERVER_ERROR == ex.status_code  # type: ignore
 
         validate_bearer_mock.assert_called_once_with(expected_credentials)
 
