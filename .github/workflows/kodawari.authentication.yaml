@@ -53,6 +53,9 @@ jobs:
       - name: Test - Source code is linted (black)
         run: poetry run black --check .
         working-directory: py/lib/kodawari.authentication
+      - name: Test - Docstrings are properly formatted according to google standard (darglint)
+        run: poetry run darglint -s google -z full
+        working-directory: py/lib/kodawari.authentication
       - name: Test - Static type check (pyright)
         run: poetry run pyright --warnings
         working-directory: py/lib/kodawari.authentication
