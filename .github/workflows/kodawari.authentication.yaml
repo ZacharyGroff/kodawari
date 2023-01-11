@@ -1,0 +1,64 @@
+name: kodawari.authentication test
+run-name: ${{ github.actor }} is testing kodawari.authentication
+on:
+  pull_request:
+    paths: 
+      - py/lib/kodawari.authentication/**
+  push:
+    branches:
+      - "main"
+    paths:
+      - py/lib/kodawari.authentication/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11.1"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Load cached Poetry installation
+        id: cached-poetry
+        uses: actions/cache@v3
+        with:
+          path: ~/.local  # the path depends on the OS
+          key: poetry-0  # increment to reset cache
+      - name: Install Poetry
+        if: steps.cached-poetry.outputs.cache-hit != 'true'
+        run: pip install poetry
+      - name: Load cached dependencies
+        id: cached-dependencies
+        uses: actions/cache@v3
+        with:
+          path: py/lib/kodawari.authentication/.venv
+          key: pydeps-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cached-poetry.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+        working-directory: py/lib/kodawari.authentication
+      - name: Install kodawari.authentication
+        run: poetry install --no-interaction
+        working-directory: py/lib/kodawari.authentication
+      - name: Test - Source code is sorted (ssort)
+        run: poetry run ssort --check
+        working-directory: py/lib/kodawari.authentication
+      - name: Test - Imports are sorted (isort)
+        run: poetry run isort **/*.py -c -v
+        working-directory: py/lib/kodawari.authentication
+      - name: Test - Source code is linted (black)
+        run: poetry run black --check .
+        working-directory: py/lib/kodawari.authentication
+      - name: Test - Static type check (pyright)
+        run: poetry run pyright --warnings
+        working-directory: py/lib/kodawari.authentication
+      - name: Test with pytest
+        run: poetry run pytest
+        working-directory: py/lib/kodawari.authentication
+
+
+
