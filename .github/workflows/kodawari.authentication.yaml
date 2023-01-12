@@ -22,19 +22,18 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Poetry
-        run: pip install poetry
-      - name: Load cached dependencies
-        id: cached-dependencies
+      - name: Cache Poetry
+        id: cache-poetry
         uses: actions/cache@v3
         with:
-          path: py/lib/kodawari.authentication/.venv
-          key: pydeps-${{ hashFiles('**/poetry.lock') }}
+          path: $HOME/.local/bin/poetry
+          key: poetry-1
+      - name: Install latest version of Poetry
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
+        run: curl -sSL https://install.python-poetry.org | python3 -
+      - name: Add Poetry to path
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        if: steps.cached-poetry.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
-        working-directory: py/lib/kodawari.authentication
-      - name: Install kodawari.authentication
         run: poetry install --no-interaction
         working-directory: py/lib/kodawari.authentication
       - name: Test - Source code is sorted (ssort)
