@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "user-api"
+version = "0.1.0"
+description = "An API for managing user data"
+authors = ["zachary <groff.zackm@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.89.1"
+uvicorn = "^0.20.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
+pyright = "^1.1.288"
+isort = "^5.11.4"
+ssort = "^0.11.6"
+black = "^22.12.0"
+darglint = "^1.8.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
