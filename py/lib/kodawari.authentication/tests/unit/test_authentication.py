@@ -28,54 +28,46 @@ def test_validate_bearer_secret_is_none() -> None:
 
 
 def test_validate_bearer_token_is_expired() -> None:
-    with (
-        patch("authentication.authentication.decode") as decode_mock,
-        patch("authentication.authentication.getenv") as get_env_mock,
-    ):
-        get_env_mock.return_value = secret
-        decode_mock.return_value = {"id": 42, "expiry": 1650001000}
-        with pytest.raises(BearerValidationException):
-            validate_bearer(token)
-        get_env_mock.assert_called_once()
-        decode_mock.assert_called_once_with(
-            token, key=secret, algorithms=_bearer_token_algorithms
-        )
+    with patch("authentication.authentication.decode") as decode_mock:
+        with patch("authentication.authentication.getenv") as get_env_mock:
+            get_env_mock.return_value = secret
+            decode_mock.return_value = {"id": 42, "expiry": 1650001000}
+            with pytest.raises(BearerValidationException):
+                validate_bearer(token)
+            get_env_mock.assert_called_once()
+            decode_mock.assert_called_once_with(
+                token, key=secret, algorithms=_bearer_token_algorithms
+            )
 
 
 def test_validate_bearer_token_is_malformed() -> None:
-    with (
-        patch("authentication.authentication.decode") as decode_mock,
-        patch("authentication.authentication.getenv") as get_env_mock,
-    ):
-
-        get_env_mock.return_value = secret
-        decode_mock.return_value = {"_id": 42, "expiry": 1750001000}
-        with pytest.raises(ValidationError):
-            validate_bearer(token)
-        get_env_mock.assert_called_once()
-        decode_mock.assert_called_once_with(
-            token, key=secret, algorithms=_bearer_token_algorithms
-        )
+    with patch("authentication.authentication.decode") as decode_mock:
+        with patch("authentication.authentication.getenv") as get_env_mock:
+            get_env_mock.return_value = secret
+            decode_mock.return_value = {"_id": 42, "expiry": 1750001000}
+            with pytest.raises(ValidationError):
+                validate_bearer(token)
+            get_env_mock.assert_called_once()
+            decode_mock.assert_called_once_with(
+                token, key=secret, algorithms=_bearer_token_algorithms
+            )
 
 
 def test_validate_bearer_success() -> None:
-    with (
-        patch("authentication.authentication.decode") as decode_mock,
-        patch("authentication.authentication.getenv") as get_env_mock,
-    ):
+    with patch("authentication.authentication.decode") as decode_mock:
+        with patch("authentication.authentication.getenv") as get_env_mock:
+            claims: Dict[str, Any] = {"id": 42, "expiry": 1750001000}
+            get_env_mock.return_value = secret
+            decode_mock.return_value = claims
+            result: BearerClaims = validate_bearer(token)
 
-        claims: Dict[str, Any] = {"id": 42, "expiry": 1750001000}
-        get_env_mock.return_value = secret
-        decode_mock.return_value = claims
-        result: BearerClaims = validate_bearer(token)
+            assert claims.get("id") == result.id
+            assert claims.get("expiry") == result.expiry
 
-        assert claims.get("id") == result.id
-        assert claims.get("expiry") == result.expiry
-
-        get_env_mock.assert_called_once()
-        decode_mock.assert_called_once_with(
-            token, key=secret, algorithms=_bearer_token_algorithms
-        )
+            get_env_mock.assert_called_once()
+            decode_mock.assert_called_once_with(
+                token, key=secret, algorithms=_bearer_token_algorithms
+            )
 
 
 @pytest.mark.asyncio
