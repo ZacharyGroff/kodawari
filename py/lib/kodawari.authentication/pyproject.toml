@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = 'authentication'}]
 
 [tool.poetry.dependencies]
-python = "^3.8.16"
+python = "^3.11"
 fastapi = "^0.89.1"
 pydantic = "^1.10.4"
 PyJWT = "^2.6.0"

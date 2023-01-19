@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel, Field, validator
 
 
@@ -46,8 +44,8 @@ class UserCreateRequest(BaseModel):
 
 
 class UserPatchRequest(BaseModel):
-    display_name: Optional[str] = _display_name_field
-    description: Optional[str] = _description_field
+    display_name: str | None = _display_name_field
+    description: str | None = _description_field
 
     _validate_display_name = validator("display_name", allow_reuse=True)(
         display_name_must_be_alphanumeric_or_underscore

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from pydantic import ValidationError
 from pytest import fixture, raises
@@ -7,7 +7,7 @@ from models.user import UserCreateRequest, UserPatchRequest, UserSchema
 
 
 @fixture
-def expected_user_schema() -> Dict[str, Any]:
+def expected_user_schema() -> dict[str, Any]:
     return {
         "id": 42,
         "display_name": "testuser",
@@ -96,7 +96,7 @@ def test_user_schema_joined_must_be_less_than_11_digits(
 
 
 @fixture
-def expected_user_create_request() -> Dict[str, Any]:
+def expected_user_create_request() -> dict[str, Any]:
     return {"display_name": "test_user", "description": "my original description"}
 
 
@@ -163,7 +163,7 @@ def test_user_create_request_description_must_be_less_than_1000_characters(
 
 
 @fixture
-def expected_user_patch_request() -> Dict[str, Any]:
+def expected_user_patch_request() -> dict[str, Any]:
     return {"display_name": "test_user", "description": "my original description"}
 
 
