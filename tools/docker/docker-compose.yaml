@@ -3,6 +3,7 @@ version: '3.8'
 services:
   cassandra:
     image: cassandra:latest
+    hostname: cassandra
     ports:
       - "9042:9042"
     environment:
@@ -14,10 +15,17 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
+  cassandra_schema_loader:
+    build:
+      context: ../../
+      dockerfile: tools/docker/Dockerfile.cassandra_schema_loader
+    depends_on:
+      cassandra:
+        condition: service_healthy
   user_api:
     build:
-      context: py/projects/user_api
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: tools/docker/Dockerfile.user_api
     ports:
       - '8000:8000'
     image: kodawari/user_api
@@ -26,4 +34,6 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
+    environment:
+      KODAWARI_SECRET_KEY: '${KODAWARI_SECRET_KEY}'
 
