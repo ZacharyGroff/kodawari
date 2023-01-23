@@ -1,4 +1,5 @@
 from logging import DEBUG, Logger
+from os import getenv
 from typing import Any
 
 from acsylla import (
@@ -15,9 +16,9 @@ from fastapi import Depends, FastAPI, HTTPException, Response, status
 from logging_utilities.utilities import get_logger
 from models.user import UserCreateRequest, UserPatchRequest, UserSchema
 
-logger: Logger = get_logger(__name__, DEBUG)
 app: FastAPI = FastAPI()
-cluster: Cluster = create_cluster(["cassandra"])
+logger: Logger = get_logger(__name__, DEBUG)
+
 
 current_id: int = 0
 
@@ -28,14 +29,31 @@ def get_id() -> int:
     return current_id
 
 
+session: Session | None = None
+
+
+async def cassandra_session() -> Session:
+    global session
+    if session is not None:
+        return session
+
+    cassandra_cluster_name: str | None = getenv("CASSANDRA_CLUSTER_NAME")
+    if cassandra_cluster_name is None:
+        raise Exception("CASSANDRA_CLUSTER_NAME is not set")
+
+    cluster: Cluster = create_cluster([cassandra_cluster_name])
+    session = await cluster.create_session(keyspace="kodawari")
+
+    return session
+
+
 @app.get("/health")
 async def health() -> str:
     return "healthy"
 
 
 @app.get("/user/{id}", status_code=status.HTTP_200_OK)
-async def get(id: int) -> UserSchema:
-    session: Session = await cluster.create_session(keyspace="kodawari")
+async def get(id: int, session: Session = Depends(cassandra_session)) -> UserSchema:
     statement: Statement = create_statement(
         "SELECT * FROM user WHERE id=?", parameters=1
     )
@@ -58,8 +76,11 @@ async def get(id: int) -> UserSchema:
 
 
 @app.post("/user", status_code=status.HTTP_201_CREATED)
-async def post(response: Response, user_create_request: UserCreateRequest) -> None:
-    session: Session = await cluster.create_session(keyspace="kodawari")
+async def post(
+    response: Response,
+    user_create_request: UserCreateRequest,
+    session: Session = Depends(cassandra_session),
+) -> None:
     statement: Statement = create_statement(
         "INSERT INTO user (id, display_name, description, joined) VALUES (?, ?, ?, toTimestamp(now()))",
         parameters=3,
@@ -137,9 +158,8 @@ async def patch(
     response: Response,
     user_patch_request: UserPatchRequest,
     bearer_claims: BearerClaims = Depends(authenticate),
+    session: Session = Depends(cassandra_session),
 ) -> None:
-    session: Session = await cluster.create_session(keyspace="kodawari")
-
     statement: Statement | None = get_patch_statement(user_patch_request, bearer_claims)
     if statement is not None:
         await session.execute(statement)
@@ -148,8 +168,10 @@ async def patch(
 
 
 @app.delete("/user", status_code=status.HTTP_204_NO_CONTENT)
-async def delete(bearer_claims: BearerClaims = Depends(authenticate)) -> None:
-    session: Session = await cluster.create_session(keyspace="kodawari")
+async def delete(
+    bearer_claims: BearerClaims = Depends(authenticate),
+    session: Session = Depends(cassandra_session),
+) -> None:
     statement: Statement = create_statement(
         "DELETE FROM user WHERE id=? IF EXISTS", parameters=1
     )

@@ -3,7 +3,7 @@ version: '3.8'
 services:
   cassandra:
     image: cassandra:latest
-    hostname: cassandra
+    hostname: '${CASSANDRA_CLUSTER_NAME}'
     ports:
       - "9042:9042"
     environment:
@@ -36,4 +36,4 @@ services:
         condition: service_healthy
     environment:
       KODAWARI_SECRET_KEY: '${KODAWARI_SECRET_KEY}'
-
+      CASSANDRA_CLUSTER_NAME: '${CASSANDRA_CLUSTER_NAME}'
