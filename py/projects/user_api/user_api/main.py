@@ -55,7 +55,9 @@ async def cassandra_session() -> Session:
 
     cassandra_cluster_name: str | None = getenv("CASSANDRA_CLUSTER_NAME")
     if cassandra_cluster_name is None:
-        raise Exception("CASSANDRA_CLUSTER_NAME is not set")
+        log_message: str = "CASSANDRA_CLUSTER_NAME is not set"
+        logger.error(log_message)
+        raise Exception(log_message)
 
     cluster: Cluster = create_cluster(
         [cassandra_cluster_name],
@@ -107,7 +109,6 @@ async def get(id: int, session: Session = Depends(cassandra_session)) -> UserSch
             raise HTTPException(status_code=404, detail="User not found")
 
         user_schema_dict: dict[Any, Any] = user_schema_row.as_dict()
-        logger.debug(user_schema_dict["joined"])
         return UserSchema(**user_schema_dict)
 
 

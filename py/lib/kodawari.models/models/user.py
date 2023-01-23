@@ -2,6 +2,15 @@ from pydantic import BaseModel, Field, validator
 
 
 def display_name_must_be_alphanumeric_or_underscore(display_name: str) -> str:
+    """Validates display_name is alphanumeric.
+
+    Args:
+        display_name: A user's display name requiring validation.
+    Returns:
+        A user's validated display name.
+    Raises:
+        ValueError: display_name must be alphanumeric.
+    """
     if display_name.replace("_", "").isalnum():
         return display_name
     raise ValueError("display_name must be alphanumeric")

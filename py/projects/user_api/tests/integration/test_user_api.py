@@ -14,7 +14,11 @@ from jwt import encode
 
 
 def get_fqdn(path: str) -> str:
-    return f"http://localhost:8000{path}"
+    user_api_port: str | None = getenv("USER_API_PORT")
+    if user_api_port is None:
+        raise Exception("USER_API_PORT is not set")
+
+    return f"http://localhost:{user_api_port}{path}"
 
 
 async def verify_user(

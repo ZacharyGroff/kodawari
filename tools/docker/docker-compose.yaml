@@ -20,6 +20,10 @@ services:
     build:
       context: ../../
       dockerfile: tools/docker/Dockerfile.cassandra_schema_loader
+      args:
+        CASSANDRA_CLUSTER_NAME_ARG: '${CASSANDRA_CLUSTER_NAME}'
+    image: kodawari/cassandra_schema_loader
+    container_name: cassandra_schema_loader
     depends_on:
       cassandra:
         condition: service_healthy
@@ -27,6 +31,8 @@ services:
     build:
       context: ../../
       dockerfile: tools/docker/Dockerfile.user_api
+      args:
+        USER_API_PORT_ARG: '${USER_API_PORT}'
     ports:
       - '${USER_API_PORT}:${USER_API_PORT}'
     image: kodawari/user_api
