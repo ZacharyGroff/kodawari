@@ -12,7 +12,7 @@ def expected_user_schema() -> dict[str, Any]:
         "id": 42,
         "display_name": "testuser",
         "description": "My test description",
-        "joined": 1673988503,
+        "joined": 1674484829054,
     }
 
 
@@ -82,15 +82,15 @@ def test_user_schema_description_must_be_less_than_1000_characters(
 def test_user_schema_joined_must_be_greater_than_kodawari_epoch(
     expected_user_schema,
 ) -> None:
-    expected_user_schema["joined"] = 1673984671
+    expected_user_schema["joined"] = 1674484829053
     with raises(ValidationError):
         _: UserSchema = UserSchema(**expected_user_schema)
 
 
-def test_user_schema_joined_must_be_less_than_11_digits(
+def test_user_schema_joined_must_be_less_than_14_digits(
     expected_user_schema,
 ) -> None:
-    expected_user_schema["joined"] = 10000000000
+    expected_user_schema["joined"] = 16744848290590
     with raises(ValidationError):
         _: UserSchema = UserSchema(**expected_user_schema)
 

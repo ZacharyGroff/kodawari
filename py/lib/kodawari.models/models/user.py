@@ -24,8 +24,8 @@ class UserSchema(BaseModel):
     display_name: str = _display_name_field
     description: str = _description_field
     joined: int = Field(
-        gt=1673984672,
-        lt=9999999999,
+        gt=1674484829053,
+        lt=9999999999999,
         description="The date a user was created, expressed as a unix timestamp",
     )
 
