@@ -28,7 +28,7 @@ services:
       context: ../../
       dockerfile: tools/docker/Dockerfile.user_api
     ports:
-      - '8000:8000'
+      - '${USER_API_PORT}:${USER_API_PORT}'
     image: kodawari/user_api
     hostname: user_api
     container_name: user_api
