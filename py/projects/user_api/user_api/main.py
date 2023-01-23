@@ -24,6 +24,13 @@ current_id: int = 0
 
 
 def get_id() -> int:
+    """A temporary function for generating a unique ID within the context of the API's lifetime
+
+    This method will eventually be deprecated in favour of a Snowflake ID generator.
+
+    Returns:
+        A unique ID within the context of the API's lifetime
+    """
     global current_id
     current_id += 1
     return current_id
@@ -33,6 +40,15 @@ session: Session | None = None
 
 
 async def cassandra_session() -> Session:
+    """Retrieves an acsylla Session object, for accessing Cassandra.
+
+    Retrieves an acsylla Session object after connecting to a cassandra cluster specified by the environment variable CASSANDRA_CLUSTER_NAME. If a Session object has already been created during the API's lifetime, it is returned without a new Session object being created.
+
+    Returns:
+        An acsylla.Session object, for accessing Cassandra.
+    Raises:
+        Exception: CASSANDRA_CLUSTER_NAME is not set.
+    """
     global session
     if session is not None:
         return session
@@ -54,11 +70,26 @@ async def cassandra_session() -> Session:
 
 @app.get("/health")
 async def health() -> str:
+    """Retrieves the health status of the API.
+
+    Returns:
+        A string of "healthy" if the API is healthy.
+    """
     return "healthy"
 
 
 @app.get("/user/{id}", status_code=status.HTTP_200_OK)
 async def get(id: int, session: Session = Depends(cassandra_session)) -> UserSchema:
+    """Retrieves a user.
+
+    Args:
+        id: The identifier for the requested User resource.
+        session: The Session required to access User data in Cassandra.
+    Returns:
+        A UserSchema, containing the requested User data.
+    Raises:
+        HTTPException: The requested User resource could not be retrieved.
+    """
     statement: Statement = create_statement(
         "SELECT * FROM user WHERE id=?", parameters=1
     )
@@ -86,6 +117,16 @@ async def post(
     user_create_request: UserCreateRequest,
     session: Session = Depends(cassandra_session),
 ) -> None:
+    """Creates a user.
+
+    Patches a user and sets the Location header to the created resource path, using properties defined in the user_create_request, a generated id, and a unix timestamp.
+
+    Args:
+        response: The FastAPI response class used for setting the Location header of the created resource path.
+        user_create_request: The UserSchema properties to set on the created resource.
+        session: The Session required to access User data in Cassandra.
+    """
+
     statement: Statement = create_statement(
         "INSERT INTO user (id, display_name, description, joined) VALUES (?, ?, ?, toTimestamp(now()))",
         parameters=3,
@@ -107,6 +148,16 @@ async def post(
 def get_patch_statement(
     user_patch_request: UserPatchRequest, bearer_claims: BearerClaims
 ) -> Statement | None:
+    """Retrieves a Statement for patching.
+
+    Retrieves a Statement for patching a User resource in Cassandra.
+
+    Args:
+        user_patch_request: The User resource properties to update.
+        bearer_claims: The claims included on the Bearer token in the request.
+    Returns:
+        An optional Statement for patching a User resource. None if no data requires patching.
+    """
     statement: Statement
     arguments: list[Any]
 
@@ -165,6 +216,16 @@ async def patch(
     bearer_claims: BearerClaims = Depends(authenticate),
     session: Session = Depends(cassandra_session),
 ) -> None:
+    """Patches a user.
+
+    Patches a user and sets the Location header to the modified resource path, using the ID retrieved from bearer_claims and properties defined in the user_patch_request.
+
+    Args:
+        response: The FastAPI response class used for setting the Location header of the modified resource path.
+        user_patch_request: The User resoruce properties to update.
+        bearer_claims: The claims included on the Bearer token in the request.
+        session: The Session required to access User data in Cassandra.
+    """
     statement: Statement | None = get_patch_statement(user_patch_request, bearer_claims)
     if statement is not None:
         await session.execute(statement)
@@ -177,6 +238,14 @@ async def delete(
     bearer_claims: BearerClaims = Depends(authenticate),
     session: Session = Depends(cassandra_session),
 ) -> None:
+    """Deletes a user.
+
+    Deletes a User resource using the ID retrieved from bearer_claims.
+
+    Args:
+        bearer_claims: The claims included on the Bearer token in the request.
+        session: The Session required to access User data in Cassandra.
+    """
     statement: Statement = create_statement(
         "DELETE FROM user WHERE id=? IF EXISTS", parameters=1
     )
