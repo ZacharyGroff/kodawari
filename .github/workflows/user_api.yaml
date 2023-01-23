@@ -3,12 +3,21 @@ run-name: ${{ github.actor }} is testing user_api
 on:
   pull_request:
     paths: 
+      - .github/workflows/user_api.yaml
       - py/projects/user_api/**
+      - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.logging_utilities/**
+      - py/lib/kodawari.models/**
   push:
     branches:
       - "main"
     paths:
+      - .github/workflows/user_api.yaml
       - py/projects/user_api/**
+      - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.logging_utilities/**
+      - py/lib/kodawari.models/**
+
 
 env:
   KODAWARI_SECRET_KEY: my-test-key

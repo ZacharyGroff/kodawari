@@ -2,12 +2,14 @@ name: kodawari.models test
 run-name: ${{ github.actor }} is testing kodawari.models
 on:
   pull_request:
-    paths: 
+    paths:
+      - .github/workflows/kodawari.models.yaml
       - py/lib/kodawari.models/**
   push:
     branches:
       - "main"
     paths:
+      - .github/workflows/kodawari.models.yaml
       - py/lib/kodawari.models/**
 
 jobs:
