@@ -41,7 +41,12 @@ async def cassandra_session() -> Session:
     if cassandra_cluster_name is None:
         raise Exception("CASSANDRA_CLUSTER_NAME is not set")
 
-    cluster: Cluster = create_cluster([cassandra_cluster_name])
+    cluster: Cluster = create_cluster(
+        [cassandra_cluster_name],
+        connect_timeout=30,
+        request_timeout=30,
+        resolve_timeout=10,
+    )
     session = await cluster.create_session(keyspace="kodawari")
 
     return session

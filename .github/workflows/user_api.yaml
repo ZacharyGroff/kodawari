@@ -12,7 +12,7 @@ on:
 
 env:
   KODAWARI_SECRET_KEY: my-test-key
-  CASSANDRA_CLUSTER_NAME: cassandra
+  CASSANDRA_CLUSTER_NAME: cassandra-ci
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -58,4 +58,7 @@ jobs:
       - name: Test with pytest
         run: poetry run pytest
         working-directory: py/projects/user_api
+      - name: Tear down stack
+        run: docker-compose down 
+        working-directory: tools/docker
 

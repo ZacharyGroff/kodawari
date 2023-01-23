@@ -3,6 +3,7 @@ version: '3.9'
 services:
   cassandra:
     image: cassandra:latest
+    container_name: '${CASSANDRA_CLUSTER_NAME}'
     hostname: '${CASSANDRA_CLUSTER_NAME}'
     ports:
       - "9042:9042"
@@ -34,6 +35,8 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
+      cassandra_schema_loader:
+        condition: service_completed_successfully
     environment:
       KODAWARI_SECRET_KEY: '${KODAWARI_SECRET_KEY}'
       CASSANDRA_CLUSTER_NAME: '${CASSANDRA_CLUSTER_NAME}'
