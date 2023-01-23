@@ -33,7 +33,7 @@ jobs:
         run: poetry run ssort --check
         working-directory: py/lib/kodawari.models
       - name: Test - Imports are sorted (isort)
-        run: poetry run isort **/*.py -c -v
+        run: poetry run isort **/*.py -c -v --profile=black
         working-directory: py/lib/kodawari.models
       - name: Test - Source code is linted (black)
         run: poetry run black --check .
