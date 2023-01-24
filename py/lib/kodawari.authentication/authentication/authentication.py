@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from os import getenv
 from typing import Any, Dict
@@ -5,11 +6,13 @@ from typing import Any, Dict
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidSignatureError, decode
+from logging_utilities.utilities import get_logger
 from pydantic import BaseModel
 
 _secret_environment_variable = "KODAWARI_SECRET_KEY"
 _bearer_token_algorithms = ["HS256"]
 _security_scheme = HTTPBearer()
+_logger: logging.Logger = get_logger(__name__, logging.DEBUG)
 
 
 class BearerValidationException(Exception):
@@ -92,5 +95,6 @@ async def authenticate(
         return bearer_claims
     except (BearerValidationException, InvalidSignatureError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    except:
+    except Exception:
+        _logger.exception("An unexpected error occurred during authentication.")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

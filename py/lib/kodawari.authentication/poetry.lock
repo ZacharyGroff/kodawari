@@ -248,6 +248,20 @@ plugins = ["setuptools"]
 requirements-deprecated-finder = ["pip-api", "pipreqs"]
 
 [[package]]
+name = "kodawari-logging-utilities"
+version = "0.1.0"
+description = "Logging utilities for Kodawari services"
+category = "main"
+optional = false
+python-versions = "^3.11"
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../kodawari.logging_utilities"
+
+[[package]]
 name = "mypy-extensions"
 version = "0.4.3"
 description = "Experimental type system extensions for programs checked with the mypy typechecker."
@@ -555,4 +569,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "c8d039c90b578a657593635ecd44ef9c048c64aee30781033c80384ac947268b"
+content-hash = "2cd83b2646e15f79b1cc6715a9e13c25a53124210645c7a30f570a4fc3652e10"
