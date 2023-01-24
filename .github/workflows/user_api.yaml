@@ -1,17 +1,28 @@
-name: kodawari.authentication test
-run-name: ${{ github.actor }} is testing kodawari.authentication
+name: user_api test
+run-name: ${{ github.actor }} is testing user_api
 on:
   pull_request:
     paths: 
-      - .github/workflows/kodawari.authentication.yaml
+      - .github/workflows/user_api.yaml
+      - py/projects/user_api/**
       - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.logging_utilities/**
+      - py/lib/kodawari.models/**
   push:
     branches:
       - "main"
     paths:
-      - .github/workflows/kodawari.authentication.yaml
+      - .github/workflows/user_api.yaml
+      - py/projects/user_api/**
       - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.logging_utilities/**
+      - py/lib/kodawari.models/**
 
+
+env:
+  KODAWARI_SECRET_KEY: my-test-key
+  CASSANDRA_CLUSTER_NAME: cassandra-ci
+  USER_API_PORT: 8000
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,6 +31,14 @@ jobs:
         python-version: ["3.11.1"]
     steps:
       - uses: actions/checkout@v3
+      - uses: KengoTODA/actions-setup-docker-compose@v1
+        if: ${{ env.ACT }}
+        name: Install `docker-compose` for local simulations
+        with:
+          version: '2.14.2'
+      - name: Build stack
+        run: docker-compose build user_api && docker-compose up -d user_api 
+        working-directory: tools/docker
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -30,23 +49,26 @@ jobs:
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install dependencies
         run: poetry install --no-interaction
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/projects/user_api
       - name: Test - Source code is sorted (ssort)
         run: poetry run ssort --check
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/projects/user_api
       - name: Test - Imports are sorted (isort)
         run: poetry run isort **/*.py -c -v --profile=black
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/projects/user_api
       - name: Test - Source code is linted (black)
         run: poetry run black --check .
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/projects/user_api
       - name: Test - Docstrings are properly formatted according to google standard (darglint)
         run: poetry run darglint -s google -z full
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/projects/user_api
       - name: Test - Static type check (pyright)
         run: poetry run pyright --warnings
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/projects/user_api
       - name: Test with pytest
         run: poetry run pytest
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/projects/user_api
+      - name: Tear down stack
+        run: docker-compose down 
+        working-directory: tools/docker
 

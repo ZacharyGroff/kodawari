@@ -3,11 +3,13 @@ run-name: ${{ github.actor }} is testing kodawari.logging_utilities
 on:
   pull_request:
     paths: 
+      - .github/workflows/kodawari.logging_utilities.yaml
       - py/lib/kodawari.logging_utilities/**
   push:
     branches:
       - "main"
     paths:
+      - .github/workflows/kodawari.logging_utilities.yaml
       - py/lib/kodawari.logging_utilities/**
 
 jobs:
@@ -33,7 +35,7 @@ jobs:
         run: poetry run ssort --check
         working-directory: py/lib/kodawari.logging_utilities
       - name: Test - Imports are sorted (isort)
-        run: poetry run isort **/*.py -c -v
+        run: poetry run isort **/*.py -c -v --profile=black
         working-directory: py/lib/kodawari.logging_utilities
       - name: Test - Source code is linted (black)
         run: poetry run black --check .

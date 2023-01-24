@@ -1,16 +1,16 @@
-name: kodawari.authentication test
-run-name: ${{ github.actor }} is testing kodawari.authentication
+name: kodawari.models test
+run-name: ${{ github.actor }} is testing kodawari.models
 on:
   pull_request:
-    paths: 
-      - .github/workflows/kodawari.authentication.yaml
-      - py/lib/kodawari.authentication/**
+    paths:
+      - .github/workflows/kodawari.models.yaml
+      - py/lib/kodawari.models/**
   push:
     branches:
       - "main"
     paths:
-      - .github/workflows/kodawari.authentication.yaml
-      - py/lib/kodawari.authentication/**
+      - .github/workflows/kodawari.models.yaml
+      - py/lib/kodawari.models/**
 
 jobs:
   build:
@@ -30,23 +30,23 @@ jobs:
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install dependencies
         run: poetry install --no-interaction
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/lib/kodawari.models
       - name: Test - Source code is sorted (ssort)
         run: poetry run ssort --check
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/lib/kodawari.models
       - name: Test - Imports are sorted (isort)
         run: poetry run isort **/*.py -c -v --profile=black
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/lib/kodawari.models
       - name: Test - Source code is linted (black)
         run: poetry run black --check .
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/lib/kodawari.models
       - name: Test - Docstrings are properly formatted according to google standard (darglint)
         run: poetry run darglint -s google -z full
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/lib/kodawari.models
       - name: Test - Static type check (pyright)
         run: poetry run pyright --warnings
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/lib/kodawari.models
       - name: Test with pytest
         run: poetry run pytest
-        working-directory: py/lib/kodawari.authentication
+        working-directory: py/lib/kodawari.models
 
