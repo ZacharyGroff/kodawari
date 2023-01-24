@@ -1,11 +1,8 @@
+from logging import DEBUG, Logger
 from typing import Any, Dict
 from unittest.mock import patch
 
 import pytest
-from fastapi import HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials
-from pydantic import ValidationError
-
 from authentication.authentication import (
     BearerClaims,
     BearerValidationException,
@@ -14,6 +11,9 @@ from authentication.authentication import (
     authenticate,
     validate_bearer,
 )
+from fastapi import HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials
+from pydantic import ValidationError
 
 token: str = "test"
 secret: str = "test_secret"
@@ -97,23 +97,39 @@ async def test_validate_raises_bearer_validation_exception() -> None:
         validate_bearer_mock.assert_called_once_with(expected_credentials)
 
 
+class LoggerMock(Logger):
+    def __init__(self):
+        self.exception_called_times = 0
+        self.exception_called_with = []
+
+    def exception(self, exception: Exception):
+        self.exception_called_times += 1
+        self.exception_called_with.append(exception)
+
+
 @pytest.mark.asyncio
 async def test_validation_raises_unexpected_exception() -> None:
+    logger_mock: LoggerMock = LoggerMock()
     with patch("authentication.authentication.validate_bearer") as validate_bearer_mock:
-        validate_bearer_mock.side_effect = Exception("fake exception thrown")
+        with patch("authentication.authentication._logger", new=logger_mock):
+            validate_bearer_mock.side_effect = Exception("fake exception thrown")
 
-        expected_credentials: str = "test-credentials"
-        authorization_credentials: HTTPAuthorizationCredentials = (
-            HTTPAuthorizationCredentials(
-                scheme="test-scheme", credentials=expected_credentials
+            expected_credentials: str = "test-credentials"
+            authorization_credentials: HTTPAuthorizationCredentials = (
+                HTTPAuthorizationCredentials(
+                    scheme="test-scheme", credentials=expected_credentials
+                )
             )
-        )
 
-        with pytest.raises(HTTPException) as ex:
-            await authenticate(credentials=authorization_credentials)
-            assert status.HTTP_500_INTERNAL_SERVER_ERROR == ex.status_code  # type: ignore
-
-        validate_bearer_mock.assert_called_once_with(expected_credentials)
+            with pytest.raises(HTTPException) as ex:
+                await authenticate(credentials=authorization_credentials)
+                assert status.HTTP_500_INTERNAL_SERVER_ERROR == ex.status_code  # type: ignore
+            assert logger_mock.exception_called_times == 1
+            assert (
+                logger_mock.exception_called_with[0]
+                == "An unexpected error occurred during authentication."
+            )
+            validate_bearer_mock.assert_called_once_with(expected_credentials)
 
 
 @pytest.mark.asyncio
