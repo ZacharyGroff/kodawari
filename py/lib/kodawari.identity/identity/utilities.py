@@ -11,7 +11,7 @@ _max_instances: int = (2**_instance_bits) - 1
 _max_sequences: int = (2**_sequence_bits) - 1
 
 
-def _get_raw_timestamp(id: int) -> int:
+def _get_relative_timestamp(id: int) -> int:
     """Retrieves a timestamp, relative to kodawari_epoch, given an id.
 
     Retrieves a unix timestamp in milliseconds, representing the time the given id was created subtracted by kodawari_epoch.
@@ -36,7 +36,7 @@ def get_timestamp(id: int) -> int:
     Returns:
         The int unix timestamp in milliseconds, representing the time the id was created.
     """
-    return _get_raw_timestamp(id) + kodawari_epoch
+    return _get_relative_timestamp(id) + kodawari_epoch
 
 
 def get_instance(id: int) -> int:
@@ -50,7 +50,7 @@ def get_instance(id: int) -> int:
     Returns:
         The int representing the identifier of the machine that requested id.
     """
-    timestamp: int = _get_raw_timestamp(id)
+    timestamp: int = _get_relative_timestamp(id)
     return (id ^ (timestamp << (_instance_bits + _sequence_bits))) >> _sequence_bits
 
 
@@ -65,7 +65,7 @@ def get_sequence(id: int) -> int:
     Returns:
         The int representing the number of ids generated at the same millisecond as id at the time id was generated.
     """
-    timestamp: int = _get_raw_timestamp(id)
+    timestamp: int = _get_relative_timestamp(id)
     instance: int = get_instance(id)
     return (
         id

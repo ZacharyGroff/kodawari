@@ -1,9 +1,8 @@
-import time
 from typing import Generator
 from unittest.mock import patch
 
 from identity.utilities import (
-    _get_raw_timestamp,
+    _get_relative_timestamp,
     get_instance,
     get_sequence,
     get_timestamp,
@@ -12,18 +11,10 @@ from identity.utilities import (
 )
 
 
-def get_bits_string(i: int) -> str:
-    return bin(i)[2:]
-
-
-def get_int_from_bits(bits: str) -> int:
-    return int(bits, 2)
-
-
-def test__get_raw_timestamp() -> None:
+def test__get_relative_timestamp() -> None:
     timestamp_ms: int = 175841947
     id_with_timestamp: int = 737534581841921
-    assert timestamp_ms == _get_raw_timestamp(id_with_timestamp)
+    assert timestamp_ms == _get_relative_timestamp(id_with_timestamp)
 
 
 def test_get_timestamp() -> None:
@@ -59,7 +50,7 @@ def test_id_generator():
             _: int = next(generator)
             actual_id: int = next(generator)
 
-            actual_timestamp: int = _get_raw_timestamp(actual_id)
+            actual_timestamp: int = _get_relative_timestamp(actual_id)
             actual_instance: int = get_instance(actual_id)
             actual_sequence: int = get_sequence(actual_id)
 

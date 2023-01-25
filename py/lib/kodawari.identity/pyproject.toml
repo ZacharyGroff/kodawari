@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "kodawari-identity"
+name = "kodawari.identity"
 version = "0.1.0"
-description = "Identity provides utilities for managing IDs within kodawari."
-authors = ["zachary <groff.zackm@gmail.com>"]
+description = "Identity provides utilities for managing identifiers within kodawari."
+authors = ["Zachary Groff <groff.zackm@gmail.com>"]
 readme = "README.md"
 packages = [{include = "identity"}]
 
