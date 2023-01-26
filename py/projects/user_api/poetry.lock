@@ -484,6 +484,20 @@ type = "directory"
 url = "../../lib/kodawari.authentication"
 
 [[package]]
+name = "kodawari-identity"
+version = "0.1.0"
+description = "Identity provides utilities for managing identifiers within kodawari."
+category = "main"
+optional = false
+python-versions = "^3.11"
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../../lib/kodawari.identity"
+
+[[package]]
 name = "kodawari-logging-utilities"
 version = "0.1.0"
 description = "Logging utilities for Kodawari services"
@@ -1035,4 +1049,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "40962084c3c0af3a2ac5bd4a92001aefd1c94ffbc0e6c3ffd7b49ff2c72029ce"
+content-hash = "9c9ad76a0a7cd2879aa53d61faeafa44f4942ecb17a299fdb54019df9a7cbbb2"
