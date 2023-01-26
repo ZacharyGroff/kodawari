@@ -127,6 +127,8 @@ async def get(id: int) -> UserSchema:
             raise HTTPException(status_code=404, detail="User not found")
 
         user_schema_dict: dict[Any, Any] = user_schema_row.as_dict()
+        joined: int = utilities.get_timestamp(user_schema_dict["id"])
+        user_schema_dict["joined"] = joined
         return UserSchema(**user_schema_dict)
 
 
@@ -142,7 +144,7 @@ async def post(response: Response, user_create_request: UserCreateRequest) -> No
     """
 
     prepared: PreparedStatement = await session.create_prepared(
-        "INSERT INTO user (id, display_name, description, joined) VALUES (?, ?, ?, toTimestamp(now()))"
+        "INSERT INTO user (id, display_name, description) VALUES (?, ?, ?)"
     )
     statement: Statement = prepared.bind()
 
