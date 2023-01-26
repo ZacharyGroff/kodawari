@@ -3,16 +3,16 @@ run-name: ${{ github.actor }} is testing kodawari.authentication
 on:
   pull_request:
     paths: 
-      - .github/actions/setup_python
-      - .github/actions/test_python
+      - .github/actions/setup_python/action.yml
+      - .github/actions/test_python/action.yml
       - .github/workflows/kodawari.authentication.yaml
       - py/lib/kodawari.authentication/**
   push:
     branches:
       - "main"
     paths:
-      - .github/actions/setup_python
-      - .github/actions/test_python
+      - .github/actions/setup_python/action.yml
+      - .github/actions/test_python/action.yml
       - .github/workflows/kodawari.authentication.yaml
       - py/lib/kodawari.authentication/**
 

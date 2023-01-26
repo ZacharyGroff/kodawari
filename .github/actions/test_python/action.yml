@@ -1,5 +1,5 @@
-name: "Python Test and Lint"
-description: "Runs tests with pytest as well as, ssort, isort, black, and pyright."
+name: "Python Test and Enforce Code Standards"
+description: "Runs tests with pytest and enforces code standards with ssort, isort, black, darglint, and pyright."
 inputs:
   workdir:
     description: "The path to the python project"
