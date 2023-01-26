@@ -3,12 +3,16 @@ run-name: ${{ github.actor }} is testing kodawari.models
 on:
   pull_request:
     paths:
+      - .github/actions/setup_python
+      - .github/actions/test_python
       - .github/workflows/kodawari.models.yaml
       - py/lib/kodawari.models/**
   push:
     branches:
       - "main"
     paths:
+      - .github/actions/setup_python
+      - .github/actions/test_python
       - .github/workflows/kodawari.models.yaml
       - py/lib/kodawari.models/**
 
@@ -24,29 +28,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install latest version of Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-      - name: Add Poetry to path
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install dependencies
-        run: poetry install --no-interaction
-        working-directory: py/lib/kodawari.models
-      - name: Test - Source code is sorted (ssort)
-        run: poetry run ssort --check
-        working-directory: py/lib/kodawari.models
-      - name: Test - Imports are sorted (isort)
-        run: poetry run isort **/*.py -c -v --profile=black
-        working-directory: py/lib/kodawari.models
-      - name: Test - Source code is linted (black)
-        run: poetry run black --check .
-        working-directory: py/lib/kodawari.models
-      - name: Test - Docstrings are properly formatted according to google standard (darglint)
-        run: poetry run darglint -s google -z full
-        working-directory: py/lib/kodawari.models
-      - name: Test - Static type check (pyright)
-        run: poetry run pyright --warnings
-        working-directory: py/lib/kodawari.models
-      - name: Test with pytest
-        run: poetry run pytest
-        working-directory: py/lib/kodawari.models
-
+      - name: setup
+        uses: ./.github/actions/setup_python
+        with:
+          workdir: py/lib/kodawari.models
+      - name: test
+        uses: ./.github/actions/test_python
+        with:
+          workdir: py/lib/kodawari.models

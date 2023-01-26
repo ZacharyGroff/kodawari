@@ -2,7 +2,7 @@ name: "Python Test and Lint"
 description: "Runs tests with pytest as well as, ssort, isort, black, and pyright."
 inputs:
   workdir:
-    description: "The path to the python project or library"
+    description: "The path to the python project"
     required: true
 runs:
   using: "composite"
