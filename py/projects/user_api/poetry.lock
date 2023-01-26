@@ -189,7 +189,7 @@ files = [
 name = "attrs"
 version = "22.2.0"
 description = "Classes Without Boilerplate"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -438,7 +438,7 @@ files = [
 name = "iniconfig"
 version = "2.0.0"
 description = "brain-dead simple config-ini parsing"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -472,16 +472,31 @@ category = "main"
 optional = false
 python-versions = "^3.11"
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 fastapi = "^0.89.1"
+kodawari-logging-utilities = {path = "../kodawari.logging_utilities", develop = true}
 pydantic = "^1.10.4"
 PyJWT = "^2.6.0"
 
 [package.source]
 type = "directory"
 url = "../../lib/kodawari.authentication"
+
+[[package]]
+name = "kodawari-identity"
+version = "0.1.0"
+description = "Identity provides utilities for managing identifiers within kodawari."
+category = "main"
+optional = false
+python-versions = "^3.11"
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../../lib/kodawari.identity"
 
 [[package]]
 name = "kodawari-logging-utilities"
@@ -491,7 +506,7 @@ category = "main"
 optional = false
 python-versions = "^3.11"
 files = []
-develop = false
+develop = true
 
 [package.source]
 type = "directory"
@@ -505,11 +520,10 @@ category = "main"
 optional = false
 python-versions = "^3.11"
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 pydantic = "^1.10.4"
-pytest = "^7.2.1"
 
 [package.source]
 type = "directory"
@@ -630,7 +644,7 @@ setuptools = "*"
 name = "packaging"
 version = "23.0"
 description = "Core utilities for Python packages"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -670,7 +684,7 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.2.2)", "pytest (>=7.2)", "pytest-
 name = "pluggy"
 version = "1.0.0"
 description = "plugin and hook calling mechanisms for python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -776,7 +790,7 @@ dev = ["twine (>=3.4.1)"]
 name = "pytest"
 version = "7.2.1"
 description = "pytest: simple powerful testing with Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1035,4 +1049,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "40962084c3c0af3a2ac5bd4a92001aefd1c94ffbc0e6c3ffd7b49ff2c72029ce"
+content-hash = "612c1be82d32136d29061adc1004fc87891a795a2f9ee963f60193919727e292"
