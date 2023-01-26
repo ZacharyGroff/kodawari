@@ -28,7 +28,8 @@ on:
 env:
   KODAWARI_SECRET_KEY: my-test-key
   CASSANDRA_CLUSTER_NAME: cassandra-ci
-  USER_API_PORT: 8000
+  USER_API_PORT: 8042
+  USER_API_INSTANCE_ID: 1
 jobs:
   build:
     runs-on: ubuntu-latest
