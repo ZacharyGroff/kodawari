@@ -1,0 +1,19 @@
+name: "Python Setup"
+description: "Prepares a python project for testing"
+inputs:
+  workdir:
+    description: "The path to the python project"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Install latest version of Poetry
+      shell: bash
+      run: curl -sSL https://install.python-poetry.org | python3 -
+    - name: Add Poetry to path
+      shell: bash
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Install dependencies
+      shell: bash
+      run: poetry install --no-interaction
+      working-directory: ${{ inputs.workdir }}
