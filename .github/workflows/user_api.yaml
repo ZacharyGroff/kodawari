@@ -8,6 +8,7 @@ on:
       - .github/workflows/user_api.yaml
       - py/projects/user_api/**
       - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
       - py/lib/kodawari.models/**
   push:
@@ -19,6 +20,7 @@ on:
       - .github/workflows/user_api.yaml
       - py/projects/user_api/**
       - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
       - py/lib/kodawari.models/**
 
