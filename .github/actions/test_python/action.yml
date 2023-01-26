@@ -1,0 +1,34 @@
+name: "Python Test and Lint"
+description: "Runs tests with pytest as well as, ssort, isort, black, and pyright."
+inputs:
+  workdir:
+    description: "The path to the python project or library"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Source code is sorted (ssort)
+      shell: bash
+      run: poetry run ssort --check
+      working-directory: ${{ inputs.workdir }}
+    - name: Imports are sorted (isort)
+      shell: bash
+      run: poetry run isort **/*.py -c -v --profile=black
+      working-directory: ${{ inputs.workdir }}
+    - name: Source code is linted (black)
+      shell: bash
+      run: poetry run black --check .
+      working-directory: ${{ inputs.workdir }}
+    - name: Docstrings are formatted to google standard (darglint)
+      shell: bash
+      run: poetry run darglint -s google -z full
+      working-directory: ${{ inputs.workdir }}
+    - name: Static type check (pyright)
+      shell: bash
+      run: poetry run pyright --warnings
+      working-directory: ${{ inputs.workdir }}
+    - name: Test (pytest)
+      shell: bash
+      run: poetry run pytest
+      working-directory: ${{ inputs.workdir }}
+
