@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field, validator
+from typing import Any
+
+from pydantic import BaseModel, Field, Required, validator
 
 
 def display_name_must_be_alphanumeric_or_underscore(display_name: str) -> str:
@@ -16,16 +18,21 @@ def display_name_must_be_alphanumeric_or_underscore(display_name: str) -> str:
     raise ValueError("display_name must be alphanumeric")
 
 
-_display_name_field = Field(
-    min_length=4,
-    max_length=12,
-    description="The non-unique alphanumeric display name of a user, restricted to a minimum of four and a maximum of twelve characters",
-)
-_description_field = Field(
-    max_length=1000,
-    default="",
-    description="The user provided description for their profile, restricted to a maximum of 1000 characters, defaulting to empty string",
-)
+def _get_display_name_field(default: Any) -> Any:
+    return Field(
+        min_length=4,
+        max_length=12,
+        default=default,
+        description="The non-unique alphanumeric display name of a user, restricted to a minimum of four and a maximum of twelve characters",
+    )
+
+
+def _get_description_field(default: Any) -> Any:
+    return Field(
+        max_length=1000,
+        default=default,
+        description="The user provided description for their profile, restricted to a maximum of 1000 characters, defaulting to empty string",
+    )
 
 
 class UserSchema(BaseModel):
@@ -39,8 +46,8 @@ class UserSchema(BaseModel):
     """
 
     id: int = Field(gt=0, description="The unique identifier for a user")
-    display_name: str = _display_name_field
-    description: str = _description_field
+    display_name: str = _get_display_name_field(Required)
+    description: str = _get_description_field(Required)
     joined: int = Field(
         gt=1674484829053,
         lt=9999999999999,
@@ -60,8 +67,8 @@ class UserCreateRequest(BaseModel):
         description: The user provided description for their profile, restricted to a maximum of 1000 characters, defaulting to empty string
     """
 
-    display_name: str = _display_name_field
-    description: str = _description_field
+    display_name: str = _get_display_name_field(Required)
+    description: str = _get_description_field("")
 
     _validate_display_name = validator("display_name", allow_reuse=True)(
         display_name_must_be_alphanumeric_or_underscore
@@ -76,8 +83,8 @@ class UserPatchRequest(BaseModel):
         description: The (optional) user provided description for their profile, restricted to a maximum of 1000 characters, defaulting to empty string
     """
 
-    display_name: str | None = _display_name_field
-    description: str | None = _description_field
+    display_name: str | None = _get_display_name_field(None)
+    description: str | None = _get_description_field(None)
 
     _validate_display_name = validator("display_name", allow_reuse=True)(
         display_name_must_be_alphanumeric_or_underscore

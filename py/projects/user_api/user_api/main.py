@@ -13,6 +13,7 @@ from acsylla import (
 )
 from authentication.authentication import BearerClaims, authenticate
 from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi.openapi.utils import get_openapi
 from identity import utilities
 from logging_utilities.utilities import get_logger
 from models.user import UserCreateRequest, UserPatchRequest, UserSchema
@@ -21,6 +22,19 @@ app: FastAPI = FastAPI()
 logger: Logger
 id_generator: Generator[int, None, None]
 session: Session
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Kodawari User API",
+        version="0.1.0",
+        description="Provides CRUD routes for managing UserSchema objects.",
+        routes=app.routes,
+    )
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
 
 
 def get_id_generator() -> Generator[int, None, None]:
@@ -81,14 +95,15 @@ async def on_startup():
 
     Instantiates global variables required for servicing requests, prior to the API starting.
     """
-    global id_generator, logger, session
+    global app, id_generator, logger, session
 
+    app.openapi = custom_openapi
     logger = get_logger(__name__, DEBUG)
     id_generator = get_id_generator()
     session = await get_cassandra_session()
 
 
-@app.get("/health")
+@app.get("/health", operation_id="get_health")
 async def health() -> str:
     """Retrieves the health status of the API.
 
@@ -98,7 +113,7 @@ async def health() -> str:
     return "healthy"
 
 
-@app.get("/user/{id}", status_code=status.HTTP_200_OK)
+@app.get("/user/{id}", status_code=status.HTTP_200_OK, operation_id="get_user")
 async def get(id: int) -> UserSchema:
     """Retrieves a user.
 
@@ -132,7 +147,7 @@ async def get(id: int) -> UserSchema:
         return UserSchema(**user_schema_dict)
 
 
-@app.post("/user", status_code=status.HTTP_201_CREATED)
+@app.post("/user", status_code=status.HTTP_201_CREATED, operation_id="create_user")
 async def post(response: Response, user_create_request: UserCreateRequest) -> None:
     """Creates a user.
 
@@ -223,7 +238,7 @@ async def get_patch_statement(
     return statement
 
 
-@app.patch("/user", status_code=status.HTTP_204_NO_CONTENT)
+@app.patch("/user", status_code=status.HTTP_204_NO_CONTENT, operation_id="patch_user")
 async def patch(
     response: Response,
     user_patch_request: UserPatchRequest,
@@ -247,7 +262,7 @@ async def patch(
     response.headers["Location"] = f"/user/{bearer_claims.id}"
 
 
-@app.delete("/user", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/user", status_code=status.HTTP_204_NO_CONTENT, operation_id="delete_user")
 async def delete(
     bearer_claims: BearerClaims = Depends(authenticate),
 ) -> None:
