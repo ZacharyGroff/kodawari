@@ -47,7 +47,7 @@ class UserSchema(BaseModel):
 
     id: int = Field(gt=0, description="The unique identifier for a user")
     display_name: str = _get_display_name_field(Required)
-    description: str = _get_description_field(Required)
+    description: str = _get_description_field("")
     joined: int = Field(
         gt=1674484829053,
         lt=9999999999999,

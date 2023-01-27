@@ -216,14 +216,14 @@ def test_user_patch_request_display_name_must_be_alphanumeric(
         _: UserPatchRequest = UserPatchRequest(**expected_user_patch_request)
 
 
-def test_user_patch_request_description_defaults_to_empty_string(
+def test_user_patch_request_description_defaults_to_none(
     expected_user_patch_request,
 ) -> None:
     del expected_user_patch_request["description"]
     user_patch_request: UserPatchRequest = UserPatchRequest(
         **expected_user_patch_request
     )
-    assert "" == user_patch_request.description
+    assert user_patch_request.description is None
 
 
 def test_user_patch_request_description_must_be_less_than_1000_characters(
