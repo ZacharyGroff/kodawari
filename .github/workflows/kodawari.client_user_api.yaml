@@ -7,6 +7,8 @@ on:
       - .github/actions/test_python/action.yml
       - .github/workflows/kodawari.client_user_api.yaml
       - py/projects/user_api/openapi.json
+      - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.models/**
       - py/lib/kodawari.client_user_api/**
   push:
     branches:
@@ -16,6 +18,8 @@ on:
       - .github/actions/test_python/action.yml
       - .github/workflows/kodawari.client_user_api.yaml
       - py/projects/user_api/openapi.json
+      - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.models/**
       - py/lib/kodawari.client_user_api/**
 
 env:
