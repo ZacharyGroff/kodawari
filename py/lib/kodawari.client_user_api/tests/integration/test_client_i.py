@@ -26,10 +26,19 @@ def user_create_request() -> UserCreateRequest:
     return UserCreateRequest(display_name="testuser", description="my test description")
 
 
+@pytest.fixture(scope="module")
+def api_base_url() -> str:
+    base_url: str | None = getenv("USER_API_BASE_URL")
+    if base_url is None:
+        raise Exception("USER_API_BASE_URL is not set")
+
+    return base_url
+
+
 @pytest_asyncio.fixture(scope="module")
-async def client() -> AsyncIterator[Client]:
+async def client(api_base_url: str) -> AsyncIterator[Client]:
     async with aiohttp.ClientSession() as session:
-        yield Client(session, "http://localhost:8042")  # TODO: extract baseurl
+        yield Client(session, api_base_url)
 
 
 @pytest_asyncio.fixture(scope="module")
