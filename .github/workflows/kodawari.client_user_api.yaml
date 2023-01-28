@@ -1,0 +1,57 @@
+name: kodawari.client_user_api test
+run-name: ${{ github.actor }} is testing kodawari.client_user_api
+on:
+  pull_request:
+    paths: 
+      - .github/actions/setup_python/action.yml
+      - .github/actions/test_python/action.yml
+      - .github/workflows/kodawari.client_user_api.yaml
+      - py/projects/user_api/openapi.json
+      - py/lib/kodawari.client_user_api/**
+  push:
+    branches:
+      - "main"
+    paths:
+      - .github/actions/setup_python/action.yml
+      - .github/actions/test_python/action.yml
+      - .github/workflows/kodawari.client_user_api.yaml
+      - py/projects/user_api/openapi.json
+      - py/lib/kodawari.client_user_api/**
+
+env:
+  KODAWARI_SECRET_KEY: my-test-key
+  CASSANDRA_CLUSTER_NAME: cassandra-ci
+  USER_API_PORT: 8042
+  USER_API_INSTANCE_ID: 1
+  USER_API_BASE_URL: http://localhost:8042
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11.1"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: KengoTODA/actions-setup-docker-compose@v1
+        if: ${{ env.ACT }}
+        name: Install `docker-compose` for local simulations
+        with:
+          version: '2.14.2'
+      - name: Build stack
+        run: docker-compose build user_api && docker-compose up -d user_api 
+        working-directory: tools/docker
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: setup
+        uses: ./.github/actions/setup_python
+        with:
+          workdir: py/lib/kodawari.client_user_api
+      - name: test
+        uses: ./.github/actions/test_python
+        with:
+          workdir: py/lib/kodawari.client_user_api
+      - name: Tear down stack
+        run: docker-compose down 
+        working-directory: tools/docker
