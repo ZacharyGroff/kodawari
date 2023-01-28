@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "kodawari.client_user_api"
 version = "0.1.0"
-description = ""
+description = "A manually implemented client for kodawari.user_api."
 authors = ["Zachary Groff <groff.zackm@gmail.com>"]
 readme = "README.md"
 packages = [{include = "client_user_api"}]
