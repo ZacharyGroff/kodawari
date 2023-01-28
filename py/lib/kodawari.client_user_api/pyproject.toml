@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "kodawari.client_user_api"
+version = "0.1.0"
+description = ""
+authors = ["Zachary Groff <groff.zackm@gmail.com>"]
+readme = "README.md"
+packages = [{include = "client_user_api"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+kodawari-models = {path = "../kodawari.models", develop = true}
+aiohttp = "^3.8.3"
+pydantic = "^1.10.4"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+pyright = "^1.1.288"
+isort = "^5.11.4"
+ssort = "^0.11.6"
+black = "^22.12.0"
+darglint = "^1.8.1"
+pytest-asyncio = "^0.20.3"
+kodawari-authentication = {path = "../../lib/kodawari.authentication", develop = true}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
