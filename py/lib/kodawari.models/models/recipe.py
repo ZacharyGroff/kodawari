@@ -83,6 +83,7 @@ class RecipeCreateRequest(BaseModel):
 
 
 class RecipePatchRequest(BaseModel):
+    id: int = _get_id_field(Required, _recipe_author_id_description)
     name: str = _get_name_field(None, _recipe_name_description)
     description: str = _get_description_field(None, _recipe_description_description)
 
@@ -120,6 +121,7 @@ class VariationCreateRequest(BaseModel):
 
 
 class VariationUpdateRequest(BaseModel):
+    id: int = _get_id_field(Required, _variation_id_description)
     name: str = _get_name_field(None, _variation_name_description)
     ingredients: list[str] = _get_ingredients_field(None)
     process: str = _get_description_field(None, _variation_process_description)
