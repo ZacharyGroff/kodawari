@@ -157,7 +157,7 @@ async def post_recipe(
 ) -> None:
     """Creates a Recipe.
 
-    Patches a recipe and sets the Location header to the created resource path, using properties defined in the recipe_create_request, a generated id, and a unix timestamp.
+    Creates a recipe and sets the Location header to the created resource path, using properties defined in the recipe_create_request, a generated id, and a unix timestamp.
 
     Args:
         response: The FastAPI response class used for setting the Location header of the created resource path.
@@ -206,40 +206,37 @@ async def get_patch_statement(
         and recipe_patch_request.description is not None
     ):
         prepared: PreparedStatement = await session.create_prepared(
-            "UPDATE user SET name=?, description=? WHERE id=? and author_id=? IF EXISTS",
+            "UPDATE recipe SET name=?, description=? WHERE id=? IF EXISTS",
         )
 
         arguments = [
             recipe_patch_request.name,
             recipe_patch_request.description,
             recipe_patch_request.id,
-            bearer_claims.id,
         ]
     elif (
         recipe_patch_request.name is not None
         and recipe_patch_request.description is None
     ):
         prepared: PreparedStatement = await session.create_prepared(
-            "UPDATE user SET name=? WHERE id=? and author_id=? IF EXISTS",
+            "UPDATE recipe SET name=? WHERE id=? IF EXISTS",
         )
 
         arguments = [
             recipe_patch_request.name,
             recipe_patch_request.id,
-            bearer_claims.id,
         ]
     elif (
         recipe_patch_request.name is None
         and recipe_patch_request.description is not None
     ):
         prepared: PreparedStatement = await session.create_prepared(
-            "UPDATE user SET description=? WHERE id=? and author_id=? IF EXISTS",
+            "UPDATE recipe SET description=? WHERE id=? IF EXISTS",
         )
 
         arguments = [
             recipe_patch_request.description,
             recipe_patch_request.id,
-            bearer_claims.id,
         ]
     else:
         return None
@@ -280,7 +277,7 @@ async def patch_recipe(
     if statement is not None:
         await session.execute(statement)
 
-    response.headers["Location"] = f"/recipe/{recipe_patch_request.id}"
+    response.headers["Location"] = f"/recipe/{requested_recipe.id}"
 
 
 @app.delete(
@@ -292,9 +289,10 @@ async def delete_recipe(
 ) -> None:
     """Deletes a recipe.
 
-    Deletes a Recipe resource using the ID retrieved from bearer_claims.
+    Deletes a Recipe resource using the provided id after verifying ownership with the id from bearer_claims.
 
     Args:
+        id: The identifier for the recipe to delete.
         bearer_claims: The claims included on the Bearer token in the request.
     """
     requested_recipe: RecipeSchema = await get_recipe(id)
@@ -305,9 +303,8 @@ async def delete_recipe(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     prepared: PreparedStatement = await session.create_prepared(
-        "DELETE FROM recipe WHERE id=? and author_id=? IF EXISTS"
+        "DELETE FROM recipe WHERE id=? IF EXISTS"
     )
     statement: Statement = prepared.bind()
     statement.bind(0, id)
-    statement.bind(1, bearer_claims.id)
     await session.execute(statement)

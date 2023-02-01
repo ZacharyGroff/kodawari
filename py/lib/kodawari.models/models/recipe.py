@@ -120,7 +120,7 @@ class VariationCreateRequest(BaseModel):
     notes: str = _get_description_field("", _variation_notes_description)
 
 
-class VariationUpdateRequest(BaseModel):
+class VariationPatchRequest(BaseModel):
     id: int = _get_id_field(Required, _variation_id_description)
     name: str = _get_name_field(None, _variation_name_description)
     ingredients: list[str] = _get_ingredients_field(None)
