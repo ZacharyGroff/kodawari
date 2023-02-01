@@ -1,80 +1,126 @@
+from typing import Any
+
 from pydantic import BaseModel, Field, Required
 
+_recipe_name_description = "The user provided name for a recipe"
+_variation_name_description = "The user provided name for a variation"
 
-class RecipeSchema(BaseModel):
-    id: int = Field(
-        default=Required, gt=0, description="The unique identifier for a recipe"
-    )
-    name: str = Field(
-        default=Required,
+
+def _get_name_field(default: Any, description: str) -> Any:
+    return Field(
+        default=default,
         max_length=100,
-        description="The user provided name for a recipe",
+        description=description,
     )
-    created_at: int = Field(
+
+
+_recipe_description_description: str = "The user provided description for the unique characteristics that define this recipe"
+_variation_notes_description: str = "A description of how the variation tastes, smells, and/or looks in comparison to the base recipe"
+_variation_process_description: str = (
+    "A description of the steps taken to produce the variation"
+)
+
+
+def _get_description_field(default: Any, description: str) -> Any:
+    return Field(
+        default=default,
+        max_length=1000,
+        description=description,
+    )
+
+
+_recipe_id_description: str = "The unique identifier for a recipe"
+_recipe_author_id_description: str = "The unique identifer for the author of a recipe"
+_variation_id_description: str = "The unique identifier for a variation"
+
+
+def _get_id_field(default: Any, description: str) -> Any:
+    return Field(
+        default=default,
+        gt=0,
+        description=description,
+    )
+
+
+def _get_views_field(default: Any, description: str) -> Any:
+    return Field(default=default, gt=-1, description=description)
+
+
+def _get_vote_diff_field(default: Any, description: str) -> Any:
+    return Field(
+        default=default,
+        description=description,
+    )
+
+
+def _get_created_at_field() -> Any:
+    return Field(
         default=Required,
         gt=1674484829053,
         lt=9999999999999,
-        description="The time the recipe was created, expressed as a unix timestamp in milliseconds",
+        description="The resource creation time, expressed as a unix timestamp in milliseconds",
     )
-    author_id: int = Field(
-        default=Required,
-        gt=0,
-        description="The unique identifer for the author of a recipe",
-    )
-    description: str = Field(
-        default="",
-        max_length=1000,
-        description="The user provided description for the unique characteristics that define this recipe",
-    )
-    views: int = Field(
-        default=0, gt=-1, description="The number of times the recipe has been viewed"
-    )
+
+
+class RecipeSchema(BaseModel):
+    id: int = _get_id_field(Required, _recipe_id_description)
+    author_id: int = _get_id_field(Required, _recipe_author_id_description)
+    created_at: int = _get_created_at_field()
+    name: str = _get_name_field(Required, _recipe_name_description)
+    description: str = _get_description_field(Required, _recipe_description_description)
+    views: int = _get_views_field(0, "The number of times the recipe has been viewed")
     subscribers: int = Field(
         default=0, gt=-1, description="The number of users subscribed to this recipe"
     )
-    vote_diff: int = Field(
-        default=0,
-        description="The differential of upvotes minus downvotes for the recipe",
+    vote_diff: int = _get_vote_diff_field(
+        0, "The differential of upvotes minus downvotes for the recipe"
+    )
+
+
+class RecipeCreateRequest(BaseModel):
+    name: str = _get_name_field(Required, _recipe_name_description)
+    description: str = _get_description_field("", _recipe_description_description)
+
+
+class RecipePatchRequest(BaseModel):
+    name: str = _get_name_field(None, _recipe_name_description)
+    description: str = _get_description_field(None, _recipe_description_description)
+
+
+def _get_ingredients_field(default: Any) -> Any:
+    return Field(
+        default=default,
+        max_length=50,
+        description="The ingredients used in the variation",
     )
 
 
 class VariationSchema(BaseModel):
-    id: int = Field(
-        default=Required, gt=0, description="The unique identifier for a variation"
+    id: int = _get_id_field(Required, _variation_id_description)
+    created_at: int = _get_created_at_field()
+    recipe_id: int = _get_id_field(Required, _recipe_id_description)
+    name: str = _get_name_field(Required, _variation_name_description)
+    ingredients: list[str] = _get_ingredients_field([])
+    process: str = _get_description_field("", _variation_process_description)
+    notes: str = _get_description_field("", _variation_notes_description)
+    views: int = _get_views_field(
+        0, "The number of times the variation has been viewed"
     )
-    recipe_id: int = Field(
-        default=Required, gt=0, description="The unique identifier for the base recipe"
+    vote_diff: int = _get_vote_diff_field(
+        0, "The differential of upvotes minus downvotes for the variation"
     )
-    name: str = Field(
-        default=Required,
-        max_length=100,
-        description="The user provided name for a variation",
-    )
-    created_at: int = Field(
-        default=Required,
-        gt=1674484829053,
-        lt=9999999999999,
-        description="The time the variation was created, expressed as a unix timestamp in milliseconds",
-    )
-    ingredients: list[str] = Field(
-        default=[], max_length=50, description="The ingredients used in the variation"
-    )
-    process: str = Field(
-        default="",
-        max_length=1000,
-        description="A description of the steps taken to produce the variation",
-    )
-    notes: str = Field(
-        default="",
-        max_length=1000,
-        description="A description of how the variation tastes, smells, and/or looks in comparison to the base recipe",
-    )
-    views: int = Field(
-        default=0,
-        gt=-1,
-        description="The number of times the variation has been viewed",
-    )
-    vote_diff: int = Field(
-        default=0,
-        description="The differential of upvotes minus downvotes for the variation",
-    )
+
+
+class VariationCreateRequest(BaseModel):
+    recipe_id: int = _get_id_field(Required, _recipe_id_description)
+    name: str = _get_name_field(Required, _variation_name_description)
+    ingredients: list[str] = _get_ingredients_field([])
+    process: str = _get_description_field("", _variation_process_description)
+    notes: str = _get_description_field("", _variation_notes_description)
+
+
+class VariationUpdateRequest(BaseModel):
+    name: str = _get_name_field(None, _variation_name_description)
+    ingredients: list[str] = _get_ingredients_field(None)
+    process: str = _get_description_field(None, _variation_process_description)
+    notes: str = _get_description_field(None, _variation_notes_description)
