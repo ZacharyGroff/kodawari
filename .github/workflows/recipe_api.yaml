@@ -1,28 +1,28 @@
-name: user_api test
-run-name: ${{ github.actor }} is testing user_api
+name: recipe_api test
+run-name: ${{ github.actor }} is testing recipe_api
 on:
   pull_request:
     paths: 
       - .github/actions/setup_python/action.yml
       - .github/actions/test_python/action.yml
-      - .github/workflows/user_api.yaml
-      - py/projects/user_api/**
+      - .github/workflows/recipe_api.yaml
+      - py/projects/recipe_api/**
+      - py/lib/kodawari.models/models/recipe.py
       - py/lib/kodawari.authentication/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
-      - py/lib/kodawari.models/**
   push:
     branches:
       - "main"
     paths:
       - .github/actions/setup_python/action.yml
       - .github/actions/test_python/action.yml
-      - .github/workflows/user_api.yaml
-      - py/projects/user_api/**
+      - .github/workflows/recipe_api.yaml
+      - py/projects/recipe_api/**
+      - py/lib/kodawari.models/models/recipe.py
       - py/lib/kodawari.authentication/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
-      - py/lib/kodawari.models/**
 
 
 env:
@@ -46,7 +46,7 @@ jobs:
         with:
           version: '2.14.2'
       - name: Build stack
-        run: docker-compose build user_api && docker-compose up -d user_api 
+        run: docker-compose build recipe_api && docker-compose up -d recipe_api 
         working-directory: tools/docker
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -55,11 +55,11 @@ jobs:
       - name: setup
         uses: ./.github/actions/setup_python
         with:
-          workdir: py/projects/user_api
+          workdir: py/projects/recipe_api
       - name: test
         uses: ./.github/actions/test_python
         with:
-          workdir: py/projects/user_api
+          workdir: py/projects/recipe_api
       - name: Tear down stack
         run: docker-compose down 
         working-directory: tools/docker
