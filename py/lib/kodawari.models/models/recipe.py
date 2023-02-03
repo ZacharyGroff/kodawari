@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from typing import Any
 
 from pydantic import BaseModel, Field, Required
@@ -189,3 +190,30 @@ class VariationPatchRequest(BaseModel):
     ingredients: list[str] = _get_ingredients_field(None)
     process: str = _get_description_field(None, _variation_process_description)
     notes: str = _get_description_field(None, _variation_notes_description)
+
+
+class RecipeEventType(Enum):
+    """The type of event occurring in the Recipe API."""
+
+    VIEWED = auto()
+    CREATED = auto()
+    MODIFIED = auto()
+    DELETED = auto()
+
+
+class RecipeEvent(BaseModel):
+    """An event that occurred in the Recipe API.
+
+    Attributes:
+        event_type: The type of event occurring in the Recipe API
+        actor_id: The unique identifier for the user performing the event
+        recipe_id: The unique identifier for a recipe
+    """
+
+    event_type: RecipeEventType = Field(
+        default=Required, description="The type of event occurring in the Recipe API"
+    )
+    actor_id: int = _get_id_field(
+        Required, "The unique identifier for the user performing the event"
+    )
+    recipe_id: int = _get_id_field(Required, _recipe_id_description)

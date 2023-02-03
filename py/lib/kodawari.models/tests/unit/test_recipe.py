@@ -1,9 +1,8 @@
 from typing import Any
 
-from pydantic import ValidationError
-from pytest import fixture, raises
+from pytest import fixture
 
-from models.recipe import RecipeSchema, VariationSchema
+from models.recipe import RecipeEvent, RecipeEventType, RecipeSchema, VariationSchema
 
 
 @fixture
@@ -61,3 +60,20 @@ def test_variation_schema_success(expected_variation_schema) -> None:
     assert expected_variation_schema["notes"] == variation_schema.notes
     assert expected_variation_schema["views"] == variation_schema.views
     assert expected_variation_schema["vote_diff"] == variation_schema.vote_diff
+
+
+@fixture
+def expected_recipe_event() -> dict[str, Any]:
+    return {
+        "event_type": RecipeEventType.CREATED,
+        "actor_id": 1,
+        "recipe_id": 2,
+    }
+
+
+def test_recipe_event_success(expected_recipe_event) -> None:
+    recipe_event: RecipeEvent = RecipeEvent(**expected_recipe_event)
+
+    assert expected_recipe_event["event_type"] == recipe_event.event_type
+    assert expected_recipe_event["actor_id"] == recipe_event.actor_id
+    assert expected_recipe_event["recipe_id"] == recipe_event.recipe_id
