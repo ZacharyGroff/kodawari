@@ -8,8 +8,8 @@ on:
       - .github/workflows/kodawari.client_user_api.yaml
       - py/projects/user_api/openapi.json
       - py/lib/kodawari.authentication/**
-      - py/lib/kodawari.models/**
       - py/lib/kodawari.client_user_api/**
+      - py/lib/kodawari.models/models/user.py
   push:
     branches:
       - "main"
@@ -19,8 +19,8 @@ on:
       - .github/workflows/kodawari.client_user_api.yaml
       - py/projects/user_api/openapi.json
       - py/lib/kodawari.authentication/**
-      - py/lib/kodawari.models/**
       - py/lib/kodawari.client_user_api/**
+      - py/lib/kodawari.models/models/user.py
 
 env:
   KODAWARI_SECRET_KEY: my-test-key
