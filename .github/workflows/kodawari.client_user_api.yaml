@@ -28,6 +28,8 @@ env:
   USER_API_PORT: 8042
   USER_API_INSTANCE_ID: 1
   USER_API_BASE_URL: http://localhost:8042
+  RECIPE_API_PORT: 8043
+  RECIPE_API_INSTANCE_ID: 2
 jobs:
   build:
     runs-on: ubuntu-latest
