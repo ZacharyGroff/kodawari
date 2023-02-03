@@ -66,6 +66,19 @@ def _get_created_at_field() -> Any:
 
 
 class RecipeSchema(BaseModel):
+    """A base recipe.
+
+    Attributes:
+        id: The unique identifier for a recipe
+        recipe_id: The unique identifer for the author of a recipe
+        created_at: The resource creation time, expressed as a unix timestamp in milliseconds
+        name: The user provided name for a recipe
+        description: The user provided description for the unique characteristics that define this recipe
+        views: The number of times the recipe has been viewed
+        subscribers: The number of users subscribed to this recipe_id
+        vote_diff: The differential of upvotes minus downvotes for the recipe
+    """
+
     id: int = _get_id_field(Required, _recipe_id_description)
     author_id: int = _get_id_field(Required, _recipe_author_id_description)
     created_at: int = _get_created_at_field()
@@ -81,11 +94,25 @@ class RecipeSchema(BaseModel):
 
 
 class RecipeCreateRequest(BaseModel):
+    """The required request body for creating a RecipeSchema object.
+
+    Attributes:
+        name: The user provided name for a recipe
+        description: The user provided description for the unique characteristics that define this recipe
+    """
+
     name: str = _get_name_field(Required, _recipe_name_description)
     description: str = _get_description_field("", _recipe_description_description)
 
 
 class RecipePatchRequest(BaseModel):
+    """The required request body for patching a RecipeSchema object.
+
+    Attributes:
+        name: The user provided name for a recipe
+        description: The user provided description for the unique characteristics that define this recipe
+    """
+
     name: str = _get_name_field(None, _recipe_name_description)
     description: str = _get_description_field(None, _recipe_description_description)
 
@@ -99,6 +126,21 @@ def _get_ingredients_field(default: Any) -> Any:
 
 
 class VariationSchema(BaseModel):
+    """A variation of a base recipe.
+
+    Attributes:
+        id: The unique identifier for a variation
+        author_id: The unique identifer for the author of a recipe
+        created_at: The resource creation time, expressed as a unix timestamp in milliseconds
+        recipe_id: The unique identifer for the recipe
+        name: The user provided name for a variation
+        ingredients: The ingredients used in the variation
+        process: A description of the steps taken to produce the variation
+        notes: A description of how the variation tastes, smells, and/or looks in comparison to the base recipe
+        views: The number of times the recipe has been viewed
+        vote_diff: The differential of upvotes minus downvotes for the recipe
+    """
+
     id: int = _get_id_field(Required, _variation_id_description)
     author_id: int = _get_id_field(Required, _variation_author_id_description)
     created_at: int = _get_created_at_field()
@@ -116,6 +158,16 @@ class VariationSchema(BaseModel):
 
 
 class VariationCreateRequest(BaseModel):
+    """The required request body for creating a VariationSchema object.
+
+    Attributes:
+        recipe_id: The unique identifer for the recipe
+        name: The user provided name for a variation
+        ingredients: The ingredients used in the variation
+        process: A description of the steps taken to produce the variation
+        notes: A description of how the variation tastes, smells, and/or looks in comparison to the base recipe
+    """
+
     recipe_id: int = _get_id_field(Required, _recipe_id_description)
     name: str = _get_name_field(Required, _variation_name_description)
     ingredients: list[str] = _get_ingredients_field([])
@@ -124,6 +176,15 @@ class VariationCreateRequest(BaseModel):
 
 
 class VariationPatchRequest(BaseModel):
+    """The required request body for patching a VariationSchema object.
+
+    Attributes:
+        name: The user provided name for a variation
+        ingredients: The ingredients used in the variation
+        process: A description of the steps taken to produce the variation
+        notes: A description of how the variation tastes, smells, and/or looks in comparison to the base recipe
+    """
+
     name: str = _get_name_field(None, _variation_name_description)
     ingredients: list[str] = _get_ingredients_field(None)
     process: str = _get_description_field(None, _variation_process_description)

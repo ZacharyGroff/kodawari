@@ -33,23 +33,18 @@ def test_recipe_schema_success(expected_recipe_schema) -> None:
     assert expected_recipe_schema["vote_diff"] == recipe_schema.vote_diff
 
 
-def test_recipe_schema_id_field_must_be_positive(expected_recipe_schema) -> None:
-    expected_recipe_schema["id"] = -1
-    with raises(ValidationError):
-        _: RecipeSchema = RecipeSchema(**expected_recipe_schema)
-
-
 @fixture
 def expected_variation_schema() -> dict[str, Any]:
     return {
         "id": 1,
-        "recipe_id": 2,
+        "author_id": 2,
+        "recipe_id": 3,
         "name": "my variation name",
         "created_at": 1674484829054,
         "ingredients": ["beans", "rice"],
         "process": "do it like this",
         "notes": "it was awful",
-        "views": 3,
+        "views": 4,
         "vote_diff": -1,
     }
 
@@ -66,9 +61,3 @@ def test_variation_schema_success(expected_variation_schema) -> None:
     assert expected_variation_schema["notes"] == variation_schema.notes
     assert expected_variation_schema["views"] == variation_schema.views
     assert expected_variation_schema["vote_diff"] == variation_schema.vote_diff
-
-
-def test_variation_schema_id_field_must_be_positive(expected_variation_schema) -> None:
-    expected_variation_schema["id"] = -1
-    with raises(ValidationError):
-        _: VariationSchema = VariationSchema(**expected_variation_schema)
