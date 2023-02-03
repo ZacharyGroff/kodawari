@@ -172,7 +172,7 @@ async def post_recipe(
     """
 
     prepared: PreparedStatement = await session.create_prepared(
-        "INSERT INTO recipe (id, author_id, name, description, views, subscribers, vote_diff) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO recipe (id, author_id, name, description) VALUES (?, ?, ?, ?)"
     )
     statement: Statement = prepared.bind()
 
@@ -182,9 +182,6 @@ async def post_recipe(
         bearer_claims.id,
         recipe_create_request.name,
         recipe_create_request.description,
-        0,
-        0,
-        0,
     ]
     statement.bind_list(arguments)
 
@@ -363,7 +360,7 @@ async def post_variation(
         )
 
     prepared: PreparedStatement = await session.create_prepared(
-        "INSERT INTO variation (id, author_id, recipe_id, name, ingredients, process, notes, views, vote_diff) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO variation (id, author_id, recipe_id, name, ingredients, process, notes) VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
     statement: Statement = prepared.bind()
 
@@ -376,8 +373,6 @@ async def post_variation(
         variation_create_request.ingredients,
         variation_create_request.process,
         variation_create_request.notes,
-        0,
-        0,
     ]
     statement.bind_list(arguments)
 

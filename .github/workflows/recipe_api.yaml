@@ -11,6 +11,8 @@ on:
       - py/lib/kodawari.authentication/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
+      - tools/cassandra/kodawari_keyspace.cql
+      - tools/cassandra/recipe_schema.cql
   push:
     branches:
       - "main"
@@ -23,7 +25,8 @@ on:
       - py/lib/kodawari.authentication/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
-
+      - tools/cassandra/kodawari_keyspace.cql
+      - tools/cassandra/recipe_schema.cql
 
 env:
   KODAWARI_SECRET_KEY: my-test-key

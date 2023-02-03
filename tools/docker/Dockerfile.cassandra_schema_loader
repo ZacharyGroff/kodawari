@@ -1,5 +1,5 @@
 FROM cassandra:latest
-COPY tools/cassandra/schema.cql .
+COPY tools/cassandra/. .
 ARG CASSANDRA_CLUSTER_NAME_ARG
 ENV CASSANDRA_CLUSTER_NAME=$CASSANDRA_CLUSTER_NAME_ARG
-ENTRYPOINT cqlsh ${CASSANDRA_CLUSTER_NAME} 9042 -f schema.cql
+ENTRYPOINT cqlsh ${CASSANDRA_CLUSTER_NAME} 9042 -f kodawari_keyspace.cql && cqlsh ${CASSANDRA_CLUSTER_NAME} 9042 -f user_schema.cql && cqlsh ${CASSANDRA_CLUSTER_NAME} 9042 -f recipe_schema.cql
