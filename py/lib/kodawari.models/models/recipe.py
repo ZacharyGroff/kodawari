@@ -70,7 +70,7 @@ class RecipeSchema(BaseModel):
 
     Attributes:
         id: The unique identifier for a recipe
-        recipe_id: The unique identifer for the author of a recipe
+        author_id: The unique identifer for the author of a recipe
         created_at: The resource creation time, expressed as a unix timestamp in milliseconds
         name: The user provided name for a recipe
         description: The user provided description for the unique characteristics that define this recipe
