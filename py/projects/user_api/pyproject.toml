@@ -1,9 +1,10 @@
 [tool.poetry]
-name = "user-api"
+name = "user_api"
 version = "0.1.0"
 description = "An API for managing user data"
-authors = ["zachary <groff.zackm@gmail.com>"]
+authors = ["Zachary Groff <groff.zackm@gmail.com>"]
 readme = "README.md"
+packages = [{include = "user_api"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
