@@ -6,5 +6,5 @@ do
 	echo "Waiting for health endpoint to return healthy..."
 	sleep 5;
 done
-curl localhost:${RECIPE_API_PORT}/openapi.json > ${KODAWARI_ROOT}/py/projects/user_api/openapi.json
+curl localhost:${RECIPE_API_PORT}/openapi.json > ${KODAWARI_ROOT}/py/projects/recipe_api/openapi.json
 docker-compose -f ${KODAWARI_ROOT}/tools/docker/docker-compose.yaml down
