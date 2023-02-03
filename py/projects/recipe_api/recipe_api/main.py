@@ -16,7 +16,6 @@ from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.openapi.utils import get_openapi
 from identity import utilities
 from logging_utilities.utilities import get_logger
-
 from models.recipe import (
     RecipeCreateRequest,
     RecipePatchRequest,
