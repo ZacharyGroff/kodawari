@@ -47,3 +47,23 @@ services:
       KODAWARI_SECRET_KEY: '${KODAWARI_SECRET_KEY}'
       CASSANDRA_CLUSTER_NAME: '${CASSANDRA_CLUSTER_NAME}'
       MACHINE_INSTANCE_IDENTIFIER: '${USER_API_INSTANCE_ID}'
+  recipe_api:
+    build:
+      context: ../../
+      dockerfile: tools/docker/Dockerfile.recipe_api
+      args:
+        RECIPE_API_PORT_ARG: '${RECIPE_API_PORT}'
+    ports:
+      - '${RECIPE_API_PORT}:${RECIPE_API_PORT}'
+    image: kodawari/recipe_api
+    hostname: recipe_api 
+    container_name: recipe_api 
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      cassandra_schema_loader:
+        condition: service_completed_successfully
+    environment:
+      KODAWARI_SECRET_KEY: '${KODAWARI_SECRET_KEY}'
+      CASSANDRA_CLUSTER_NAME: '${CASSANDRA_CLUSTER_NAME}'
+      MACHINE_INSTANCE_IDENTIFIER: '${RECIPE_API_INSTANCE_ID}'

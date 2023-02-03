@@ -1,33 +1,35 @@
-name: kodawari.client_user_api test
-run-name: ${{ github.actor }} is testing kodawari.client_user_api
+name: recipe_api test
+run-name: ${{ github.actor }} is testing recipe_api
 on:
   pull_request:
     paths: 
       - .github/actions/setup_python/action.yml
       - .github/actions/test_python/action.yml
-      - .github/workflows/kodawari.client_user_api.yaml
-      - py/projects/user_api/openapi.json
+      - .github/workflows/recipe_api.yaml
+      - py/projects/recipe_api/**
+      - py/lib/kodawari.models/models/recipe.py
       - py/lib/kodawari.authentication/**
-      - py/lib/kodawari.models/**
-      - py/lib/kodawari.client_user_api/**
+      - py/lib/kodawari.identity/**
+      - py/lib/kodawari.logging_utilities/**
   push:
     branches:
       - "main"
     paths:
       - .github/actions/setup_python/action.yml
       - .github/actions/test_python/action.yml
-      - .github/workflows/kodawari.client_user_api.yaml
-      - py/projects/user_api/openapi.json
+      - .github/workflows/recipe_api.yaml
+      - py/projects/recipe_api/**
+      - py/lib/kodawari.models/models/recipe.py
       - py/lib/kodawari.authentication/**
-      - py/lib/kodawari.models/**
-      - py/lib/kodawari.client_user_api/**
+      - py/lib/kodawari.identity/**
+      - py/lib/kodawari.logging_utilities/**
+
 
 env:
   KODAWARI_SECRET_KEY: my-test-key
   CASSANDRA_CLUSTER_NAME: cassandra-ci
   USER_API_PORT: 8042
   USER_API_INSTANCE_ID: 1
-  USER_API_BASE_URL: http://localhost:8042
   RECIPE_API_PORT: 8043
   RECIPE_API_INSTANCE_ID: 2
 jobs:
@@ -44,7 +46,7 @@ jobs:
         with:
           version: '2.14.2'
       - name: Build stack
-        run: docker-compose build user_api && docker-compose up -d user_api 
+        run: docker-compose build recipe_api && docker-compose up -d recipe_api 
         working-directory: tools/docker
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -53,11 +55,12 @@ jobs:
       - name: setup
         uses: ./.github/actions/setup_python
         with:
-          workdir: py/lib/kodawari.client_user_api
+          workdir: py/projects/recipe_api
       - name: test
         uses: ./.github/actions/test_python
         with:
-          workdir: py/lib/kodawari.client_user_api
+          workdir: py/projects/recipe_api
       - name: Tear down stack
         run: docker-compose down 
         working-directory: tools/docker
+

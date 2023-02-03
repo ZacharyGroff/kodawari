@@ -1,0 +1,8 @@
+FROM python:3.11.1-buster
+COPY . .
+WORKDIR /py/projects/recipe_api
+RUN pip3 install poetry
+RUN poetry install --only main --no-root
+ARG RECIPE_API_PORT_ARG 
+ENV RECIPE_API_PORT=$RECIPE_API_PORT_ARG
+ENTRYPOINT poetry run uvicorn main:app --app-dir recipe_api/ --host 0.0.0.0 --port ${RECIPE_API_PORT}
