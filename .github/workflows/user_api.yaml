@@ -36,6 +36,8 @@ env:
   USER_API_INSTANCE_ID: 1
   RECIPE_API_PORT: 8043
   RECIPE_API_INSTANCE_ID: 2
+  KAFKA_BROKER_NAME: broker
+  KAFKA_BROKER_PORT: 9092
 jobs:
   build:
     runs-on: ubuntu-latest

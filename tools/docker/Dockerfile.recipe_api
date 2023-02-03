@@ -1,4 +1,9 @@
-FROM python:3.11.1-buster
+FROM python:3.11.1-buster as python-kafka-stage
+RUN apt update && apt -y install software-properties-common gcc
+RUN git clone https://github.com/edenhill/librdkafka
+RUN cd librdkafka && ./configure && make && make install && ldconfig
+
+FROM python-kafka-stage
 COPY . .
 WORKDIR /py/projects/recipe_api
 RUN pip3 install poetry

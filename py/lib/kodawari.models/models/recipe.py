@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from json import JSONEncoder
 from typing import Any
 
 from pydantic import BaseModel, Field, Required
@@ -193,7 +194,14 @@ class VariationPatchRequest(BaseModel):
 
 
 class RecipeEventType(Enum):
-    """The type of event occurring in the Recipe API."""
+    """The type of event occurring in the Recipe API.
+
+    Attributes:
+        VIEWED: 1
+        CREATED: 2
+        MODIFIED: 3
+        DELETED: 4
+    """
 
     VIEWED = auto()
     CREATED = auto()
@@ -201,8 +209,10 @@ class RecipeEventType(Enum):
     DELETED = auto()
 
 
-class RecipeEvent(BaseModel):
+class RecipeEvent(BaseModel, JSONEncoder):
     """An event that occurred in the Recipe API.
+
+    An event that occurred in the Recipe API. Inherits from JSONEncoder and implements JSONEncoder.default to support json serialization.
 
     Attributes:
         event_type: The type of event occurring in the Recipe API
@@ -217,3 +227,22 @@ class RecipeEvent(BaseModel):
         Required, "The unique identifier for the user performing the event"
     )
     recipe_id: int = _get_id_field(Required, _recipe_id_description)
+
+
+class RecipeEventEncoder(JSONEncoder):
+    """A class for encoding a RecipeEvent.
+
+    Inherits from JSONEncoder and overrides default method to handle encoding of enum field.
+    """
+
+    def default(self, recipe_event: RecipeEvent):
+        """Returns a json-encodable dictionary, representing a RecipeEvent.
+
+        Args:
+            recipe_event: The RecipeEvent to encode.
+
+        Returns: A json-encodable dictionary.
+        """
+        recipe_event_dict = recipe_event.dict()
+        recipe_event_dict["event_type"] = recipe_event_dict["event_type"].value
+        return recipe_event_dict

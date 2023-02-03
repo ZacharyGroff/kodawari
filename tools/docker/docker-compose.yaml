@@ -27,6 +27,35 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zookeeper
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+  broker:
+    image: confluentinc/cp-kafka:latest
+    hostname: '${KAFKA_BROKER_NAME}'
+    container_name: '${KAFKA_BROKER_NAME}'
+    ports:
+      - "${KAFKA_BROKER_PORT}:${KAFKA_BROKER_PORT}"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_BROKER_NAME}:${KAFKA_BROKER_PORT},PLAINTEXT_INTERNAL://${KAFKA_BROKER_NAME}:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: nc -z localhost $KAFKA_BROKER_PORT || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 5
   user_api:
     build:
       context: ../../
@@ -59,6 +88,8 @@ services:
     hostname: recipe_api 
     container_name: recipe_api 
     depends_on:
+      broker:
+        condition: service_healthy
       cassandra:
         condition: service_healthy
       cassandra_schema_loader:
@@ -67,3 +98,5 @@ services:
       KODAWARI_SECRET_KEY: '${KODAWARI_SECRET_KEY}'
       CASSANDRA_CLUSTER_NAME: '${CASSANDRA_CLUSTER_NAME}'
       MACHINE_INSTANCE_IDENTIFIER: '${RECIPE_API_INSTANCE_ID}'
+      KAFKA_BROKER_NAME: '${KAFKA_BROKER_NAME}'
+      KAFKA_BROKER_PORT: '${KAFKA_BROKER_PORT}'
