@@ -167,19 +167,7 @@ async def health() -> str:
     return "healthy"
 
 
-@app.get("/recipe/{id}", status_code=status.HTTP_200_OK, operation_id="get_recipe")
-async def get_recipe(
-    id: int, bearer_claims: BearerClaims = Depends(authenticate)
-) -> RecipeSchema:
-    """Retrieves a recipe.
-
-    Args:
-        id: The identifier for the requested Recipe resource.
-    Returns:
-        A RecipeSchema, containing the requested Recipe data.
-    Raises:
-        HTTPException: The requested Recipe resource could not be retrieved.
-    """
+async def _get_recipe_internal(id: int) -> RecipeSchema:
     prepared: PreparedStatement = await session.create_prepared(
         "SELECT * FROM recipe WHERE id=?"
     )
@@ -202,20 +190,36 @@ async def get_recipe(
         recipe_schema_dict: dict[Any, Any] = recipe_schema_row.as_dict()
         created_at: int = utilities.get_timestamp(recipe_schema_dict["id"])
         recipe_schema_dict["created_at"] = created_at
-        recipe_schema: RecipeSchema = RecipeSchema(**recipe_schema_dict)
 
-        recipe_viewed_event: RecipeEvent = RecipeEvent(
-            event_type=RecipeEventType.VIEWED,
-            actor_id=bearer_claims.id,
-            recipe_id=recipe_schema.id,
-        )
-        producer.produce(
-            "recipe.viewed",
-            key=str(recipe_viewed_event.recipe_id),
-            value=recipe_viewed_event,
-        )
+        return RecipeSchema(**recipe_schema_dict)
 
-        return recipe_schema
+
+@app.get("/recipe/{id}", status_code=status.HTTP_200_OK, operation_id="get_recipe")
+async def get_recipe(
+    id: int, bearer_claims: BearerClaims = Depends(authenticate)
+) -> RecipeSchema:
+    """Retrieves a recipe.
+
+    Args:
+        id: The identifier for the requested Recipe resource.
+    Returns:
+        A RecipeSchema, containing the requested Recipe data.
+    Raises:
+        HTTPException: The requested Recipe resource could not be retrieved.
+    """
+    recipe_schema: RecipeSchema = await _get_recipe_internal(id)
+    recipe_viewed_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.VIEWED,
+        actor_id=bearer_claims.id,
+        recipe_id=recipe_schema.id,
+    )
+    producer.produce(
+        "recipe.viewed",
+        key=str(recipe_viewed_event.recipe_id),
+        value=recipe_viewed_event,
+    )
+
+    return recipe_schema
 
 
 @app.post("/recipe", status_code=status.HTTP_201_CREATED, operation_id="create_recipe")
@@ -319,7 +323,7 @@ async def patch_recipe(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_recipe: RecipeSchema = await get_recipe(id, bearer_claims=bearer_claims)
+    requested_recipe: RecipeSchema = await _get_recipe_internal(id)
     if requested_recipe.author_id != bearer_claims.id:
         logger.error(
             f"Unauthorized deletion attempt of recipe: {requested_recipe.id} from user: {bearer_claims.id}"
@@ -363,7 +367,7 @@ async def delete_recipe(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_recipe: RecipeSchema = await get_recipe(id, bearer_claims=bearer_claims)
+    requested_recipe: RecipeSchema = await _get_recipe_internal(id)
     if requested_recipe.author_id != bearer_claims.id:
         logger.error(
             f"Unauthorized deletion attempt of recipe: {requested_recipe.id} from user: {bearer_claims.id}"
@@ -389,21 +393,7 @@ async def delete_recipe(
     )
 
 
-@app.get(
-    "/variation/{id}", status_code=status.HTTP_200_OK, operation_id="get_variation"
-)
-async def get_variation(
-    id: int, bearer_claims: BearerClaims = Depends(authenticate)
-) -> VariationSchema:
-    """Retrieves a variation.
-
-    Args:
-        id: The identifier for the requested Variation resource.
-    Returns:
-        A VariationSchema, containing the requested Variation data.
-    Raises:
-        HTTPException: The requested Variation resource could not be retrieved.
-    """
+async def _get_variation_internal(id: int) -> VariationSchema:
     prepared: PreparedStatement = await session.create_prepared(
         "SELECT * FROM variation WHERE id=?"
     )
@@ -426,20 +416,37 @@ async def get_variation(
         variation_schema_dict: dict[Any, Any] = variation_schema_row.as_dict()
         created_at: int = utilities.get_timestamp(variation_schema_dict["id"])
         variation_schema_dict["created_at"] = created_at
-        variation_schema: VariationSchema = VariationSchema(**variation_schema_dict)
+        return VariationSchema(**variation_schema_dict)
 
-        variation_viewed_event: RecipeEvent = RecipeEvent(
-            event_type=RecipeEventType.VIEWED,
-            actor_id=bearer_claims.id,
-            recipe_id=variation_schema.id,
-        )
-        producer.produce(
-            "variation.viewed",
-            key=str(variation_schema.id),
-            value=variation_viewed_event,
-        )
 
-        return variation_schema
+@app.get(
+    "/variation/{id}", status_code=status.HTTP_200_OK, operation_id="get_variation"
+)
+async def get_variation(
+    id: int, bearer_claims: BearerClaims = Depends(authenticate)
+) -> VariationSchema:
+    """Retrieves a variation.
+
+    Args:
+        id: The identifier for the requested Variation resource.
+    Returns:
+        A VariationSchema, containing the requested Variation data.
+    Raises:
+        HTTPException: The requested Variation resource could not be retrieved.
+    """
+    variation_schema: VariationSchema = await _get_variation_internal(id)
+    variation_viewed_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.VIEWED,
+        actor_id=bearer_claims.id,
+        recipe_id=variation_schema.id,
+    )
+    producer.produce(
+        "variation.viewed",
+        key=str(variation_schema.id),
+        value=variation_viewed_event,
+    )
+
+    return variation_schema
 
 
 @app.post(
@@ -460,9 +467,8 @@ async def post_variation(
     Raises:
         HTTPException: A recipe with the recipe_id in the request was not found.
     """
-    requested_recipe: RecipeSchema = await get_recipe(
+    requested_recipe: RecipeSchema = await _get_recipe_internal(
         variation_create_request.recipe_id,
-        bearer_claims=bearer_claims,
     )
     if requested_recipe is None:
         raise HTTPException(
@@ -526,7 +532,7 @@ async def patch_variation(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_variation: VariationSchema = await get_variation(id, bearer_claims)
+    requested_variation: VariationSchema = await _get_variation_internal(id)
     if requested_variation.author_id != bearer_claims.id:
         logger.error(
             f"Unauthorized deletion attempt of variation: {requested_variation.id} from user: {bearer_claims.id}"
@@ -572,7 +578,7 @@ async def delete_variation(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_variation: VariationSchema = await get_variation(id, bearer_claims)
+    requested_variation: VariationSchema = await _get_variation_internal(id)
     if requested_variation.author_id != bearer_claims.id:
         logger.error(
             f"Unauthorized deletion attempt of variation: {requested_variation.id} from user: {bearer_claims.id}"
