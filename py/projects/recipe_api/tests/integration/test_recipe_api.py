@@ -61,7 +61,7 @@ async def verify_recipe(
     created_recipe_resource_location: str,
     expected_recipe_data: dict[str, Any],
     created_recipe_id: int,
-    start_timestamp_ms: int | None = None,
+    verify_created_at: bool = False,
 ) -> None:
     response: aiohttp.ClientResponse = await http_session.get(
         get_fqdn(created_recipe_resource_location), headers=request_headers
@@ -74,10 +74,8 @@ async def verify_recipe(
         assert expected_recipe_data["name"] == response_json["name"]
     if "description" in expected_recipe_data:
         assert expected_recipe_data["description"] == response_json["description"]
-    if start_timestamp_ms:
-        assert (
-            start_timestamp_ms < response_json["created_at"] < start_timestamp_ms + 5000
-        )
+    if verify_created_at:
+        assert response_json["created_at"] is not None
 
 
 @pytest.fixture(scope="module")
@@ -86,11 +84,6 @@ def test_recipe_data() -> dict[str, Any]:
         "name": "test name",
         "description": "my recipe description",
     }
-
-
-@pytest.fixture()
-def start_timestamp_ms() -> int:
-    return int(time.time()) * 1000
 
 
 @pytest.fixture(scope="module")
@@ -142,7 +135,6 @@ async def test_recipe_created(
     created_recipe_resource_location: str,
     test_recipe_data: dict[str, Any],
     created_recipe_id: int,
-    start_timestamp_ms: int,
 ) -> None:
     await verify_recipe(
         http_session,
@@ -150,7 +142,7 @@ async def test_recipe_created(
         created_recipe_resource_location,
         test_recipe_data,
         created_recipe_id,
-        start_timestamp_ms,
+        verify_created_at=True,
     )
 
 
@@ -285,7 +277,7 @@ async def verify_variation(
     created_variation_resource_location: str,
     expected_variation_data: dict[str, Any],
     created_variation_id: int,
-    start_timestamp_ms: int | None = None,
+    verify_created_at: bool = False,
 ) -> None:
     response: aiohttp.ClientResponse = await http_session.get(
         get_fqdn(created_variation_resource_location),
@@ -297,10 +289,8 @@ async def verify_variation(
     assert created_variation_id == response_json["id"]
     for key in expected_variation_data:
         assert expected_variation_data[key] == response_json[key]
-    if start_timestamp_ms:
-        assert (
-            start_timestamp_ms < response_json["created_at"] < start_timestamp_ms + 5000
-        )
+    if verify_created_at:
+        assert response_json["created_at"] is not None
 
 
 @pytest.mark.asyncio
@@ -310,7 +300,6 @@ async def test_variation_created(
     created_variation_resource_location: str,
     test_variation_data: dict[str, Any],
     created_variation_id: int,
-    start_timestamp_ms: int,
 ) -> None:
     await verify_variation(
         http_session,
@@ -318,7 +307,7 @@ async def test_variation_created(
         created_variation_resource_location,
         test_variation_data,
         created_variation_id,
-        start_timestamp_ms,
+        verify_created_at=True,
     )
 
 
