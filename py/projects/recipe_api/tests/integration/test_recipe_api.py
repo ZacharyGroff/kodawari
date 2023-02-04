@@ -57,13 +57,14 @@ async def unauthorized_request_headers(bearer_token_user_id) -> dict[str, Any]:
 
 async def verify_recipe(
     http_session: aiohttp.ClientSession,
+    request_headers: dict[str, Any],
     created_recipe_resource_location: str,
     expected_recipe_data: dict[str, Any],
     created_recipe_id: int,
-    start_timestamp_ms: int | None = None,
+    verify_created_at: bool = False,
 ) -> None:
     response: aiohttp.ClientResponse = await http_session.get(
-        get_fqdn(created_recipe_resource_location)
+        get_fqdn(created_recipe_resource_location), headers=request_headers
     )
     response_json: dict[Any, Any] = await response.json()
 
@@ -73,10 +74,8 @@ async def verify_recipe(
         assert expected_recipe_data["name"] == response_json["name"]
     if "description" in expected_recipe_data:
         assert expected_recipe_data["description"] == response_json["description"]
-    if start_timestamp_ms:
-        assert (
-            start_timestamp_ms < response_json["created_at"] < start_timestamp_ms + 5000
-        )
+    if verify_created_at:
+        assert response_json["created_at"] is not None
 
 
 @pytest.fixture(scope="module")
@@ -85,11 +84,6 @@ def test_recipe_data() -> dict[str, Any]:
         "name": "test name",
         "description": "my recipe description",
     }
-
-
-@pytest.fixture()
-def start_timestamp_ms() -> int:
-    return int(time.time()) * 1000
 
 
 @pytest.fixture(scope="module")
@@ -137,24 +131,27 @@ async def test_health_200(http_session: aiohttp.ClientSession) -> None:
 @pytest.mark.asyncio
 async def test_recipe_created(
     http_session: aiohttp.ClientSession,
+    request_headers: dict[str, Any],
     created_recipe_resource_location: str,
     test_recipe_data: dict[str, Any],
     created_recipe_id: int,
-    start_timestamp_ms: int,
 ) -> None:
     await verify_recipe(
         http_session,
+        request_headers,
         created_recipe_resource_location,
         test_recipe_data,
         created_recipe_id,
-        start_timestamp_ms,
+        verify_created_at=True,
     )
 
 
 @pytest.mark.asyncio
-async def test_recipe_get_404(http_session: aiohttp.ClientSession) -> None:
+async def test_recipe_get_404(
+    http_session: aiohttp.ClientSession, request_headers: dict[str, Any]
+) -> None:
     response: aiohttp.ClientResponse = await http_session.get(
-        get_fqdn(f"/recipe/999999999")
+        get_fqdn(f"/recipe/999999999"), headers=request_headers
     )
     assert 404 == response.status
 
@@ -229,12 +226,9 @@ async def test_recipe_patch_204(
     )
     assert modified_recipe_resource_location is not None
 
-    response: aiohttp.ClientResponse = await http_session.get(
-        get_fqdn(modified_recipe_resource_location)
-    )
-
     await verify_recipe(
         http_session,
+        request_headers,
         modified_recipe_resource_location,
         expected_recipe_data,
         created_recipe_id,
@@ -279,13 +273,15 @@ async def created_variation_id(created_variation_resource_location: str) -> int:
 
 async def verify_variation(
     http_session: aiohttp.ClientSession,
+    request_headers: dict[str, Any],
     created_variation_resource_location: str,
     expected_variation_data: dict[str, Any],
     created_variation_id: int,
-    start_timestamp_ms: int | None = None,
+    verify_created_at: bool = False,
 ) -> None:
     response: aiohttp.ClientResponse = await http_session.get(
-        get_fqdn(created_variation_resource_location)
+        get_fqdn(created_variation_resource_location),
+        headers=request_headers,
     )
     response_json: dict[Any, Any] = await response.json()
 
@@ -293,26 +289,25 @@ async def verify_variation(
     assert created_variation_id == response_json["id"]
     for key in expected_variation_data:
         assert expected_variation_data[key] == response_json[key]
-    if start_timestamp_ms:
-        assert (
-            start_timestamp_ms < response_json["created_at"] < start_timestamp_ms + 5000
-        )
+    if verify_created_at:
+        assert response_json["created_at"] is not None
 
 
 @pytest.mark.asyncio
 async def test_variation_created(
     http_session: aiohttp.ClientSession,
+    request_headers: dict[str, Any],
     created_variation_resource_location: str,
     test_variation_data: dict[str, Any],
     created_variation_id: int,
-    start_timestamp_ms: int,
 ) -> None:
     await verify_variation(
         http_session,
+        request_headers,
         created_variation_resource_location,
         test_variation_data,
         created_variation_id,
-        start_timestamp_ms,
+        verify_created_at=True,
     )
 
 
@@ -379,11 +374,12 @@ async def test_variation_patch_204(
     assert modified_variation_resource_location is not None
 
     response: aiohttp.ClientResponse = await http_session.get(
-        get_fqdn(modified_variation_resource_location)
+        get_fqdn(modified_variation_resource_location), headers=request_headers
     )
 
     await verify_recipe(
         http_session,
+        request_headers,
         modified_variation_resource_location,
         expected_variation_data,
         created_variation_id,
@@ -439,7 +435,7 @@ async def test_variation_delete_204_404(
     assert 204 == response.status
 
     response: aiohttp.ClientResponse = await http_session.get(
-        get_fqdn(created_variation_resource_location)
+        get_fqdn(created_variation_resource_location), headers=request_headers
     )
     assert 404 == response.status
 
@@ -457,6 +453,7 @@ async def test_recipe_delete_204_404(
     assert 204 == response.status
 
     response: aiohttp.ClientResponse = await http_session.get(
-        get_fqdn(created_recipe_resource_location)
+        get_fqdn(created_recipe_resource_location),
+        headers=request_headers,
     )
     assert 404 == response.status

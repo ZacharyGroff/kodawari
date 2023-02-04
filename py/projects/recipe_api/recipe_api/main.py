@@ -1,3 +1,4 @@
+from json import dumps
 from logging import DEBUG, Logger
 from os import getenv
 from typing import Any, Generator
@@ -12,12 +13,17 @@ from acsylla import (
     create_cluster,
 )
 from authentication.authentication import BearerClaims, authenticate
+from confluent_kafka import SerializingProducer
+from confluent_kafka.serialization import StringSerializer
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.openapi.utils import get_openapi
 from identity import utilities
 from logging_utilities.utilities import get_logger
 from models.recipe import (
     RecipeCreateRequest,
+    RecipeEvent,
+    RecipeEventEncoder,
+    RecipeEventType,
     RecipePatchRequest,
     RecipeSchema,
     VariationCreateRequest,
@@ -29,6 +35,7 @@ app: FastAPI = FastAPI()
 logger: Logger
 id_generator: Generator[int, None, None]
 session: Session
+producer: SerializingProducer
 
 
 def custom_openapi():
@@ -96,17 +103,57 @@ async def get_cassandra_session() -> Session:
     return session
 
 
+def get_kafka_producer() -> SerializingProducer:
+    """Retrieves kafka producer, configured for the current environment.
+
+    Returns:
+        A confluent_kafka.Producer object.
+    Raises:
+        Exception: KAFKA_BROKER_NAME is not set.
+        Exception: KAFKA_BROKER_PORT is not set.
+        Exception: MACHINE_INSTANCE_IDENTIFIER is not set.
+    """
+    kafka_broker_name: str | None = getenv("KAFKA_BROKER_NAME")
+    if kafka_broker_name is None:
+        log_message: str = "KAFKA_BROKER_NAME is not set"
+        logger.error(log_message)
+        raise Exception(log_message)
+
+    kafka_broker_port: str | None = getenv("KAFKA_BROKER_PORT")
+    if kafka_broker_port is None:
+        log_message: str = "KAFKA_BROKER_PORT is not set"
+        logger.error(log_message)
+        raise Exception(log_message)
+
+    machine_instance_identifier: str | None = getenv("MACHINE_INSTANCE_IDENTIFIER")
+    if machine_instance_identifier is None:
+        log_message: str = "MACHINE_INSTANCE_IDENTIFIER is not set"
+        logger.error(log_message)
+        raise Exception(log_message)
+
+    kafka_config: dict[str, Any] = {
+        "bootstrap.servers": f"{kafka_broker_name}:{kafka_broker_port}",
+        "client.id": machine_instance_identifier,
+        "key.serializer": StringSerializer("utf-8"),
+        "value.serializer": lambda recipe_event, _: dumps(
+            recipe_event, cls=RecipeEventEncoder
+        ).encode("utf-8"),
+    }
+    return SerializingProducer(kafka_config)
+
+
 @app.on_event("startup")
 async def on_startup():
     """Prepares API for requests.
 
     Instantiates global variables required for servicing requests, prior to the API starting.
     """
-    global app, id_generator, logger, session
+    global app, id_generator, logger, producer, session
 
     app.openapi = custom_openapi
     logger = get_logger(__name__, DEBUG)
     id_generator = get_id_generator()
+    producer = get_kafka_producer()
     session = await get_cassandra_session()
 
 
@@ -120,17 +167,7 @@ async def health() -> str:
     return "healthy"
 
 
-@app.get("/recipe/{id}", status_code=status.HTTP_200_OK, operation_id="get_recipe")
-async def get_recipe(id: int) -> RecipeSchema:
-    """Retrieves a recipe.
-
-    Args:
-        id: The identifier for the requested Recipe resource.
-    Returns:
-        A RecipeSchema, containing the requested Recipe data.
-    Raises:
-        HTTPException: The requested Recipe resource could not be retrieved.
-    """
+async def _get_recipe_internal(id: int) -> RecipeSchema:
     prepared: PreparedStatement = await session.create_prepared(
         "SELECT * FROM recipe WHERE id=?"
     )
@@ -153,7 +190,36 @@ async def get_recipe(id: int) -> RecipeSchema:
         recipe_schema_dict: dict[Any, Any] = recipe_schema_row.as_dict()
         created_at: int = utilities.get_timestamp(recipe_schema_dict["id"])
         recipe_schema_dict["created_at"] = created_at
+
         return RecipeSchema(**recipe_schema_dict)
+
+
+@app.get("/recipe/{id}", status_code=status.HTTP_200_OK, operation_id="get_recipe")
+async def get_recipe(
+    id: int, bearer_claims: BearerClaims = Depends(authenticate)
+) -> RecipeSchema:
+    """Retrieves a recipe.
+
+    Args:
+        id: The identifier for the requested Recipe resource.
+    Returns:
+        A RecipeSchema, containing the requested Recipe data.
+    Raises:
+        HTTPException: The requested Recipe resource could not be retrieved.
+    """
+    recipe_schema: RecipeSchema = await _get_recipe_internal(id)
+    recipe_viewed_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.VIEWED,
+        actor_id=bearer_claims.id,
+        recipe_id=recipe_schema.id,
+    )
+    producer.produce(
+        "recipe.viewed",
+        key=str(recipe_viewed_event.recipe_id),
+        value=recipe_viewed_event,
+    )
+
+    return recipe_schema
 
 
 @app.post("/recipe", status_code=status.HTTP_201_CREATED, operation_id="create_recipe")
@@ -188,6 +254,17 @@ async def post_recipe(
     await session.execute(statement)
 
     response.headers["Location"] = f"/recipe/{recipe_id}"
+
+    recipe_created_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.CREATED,
+        actor_id=bearer_claims.id,
+        recipe_id=recipe_id,
+    )
+    producer.produce(
+        "recipe.created",
+        key=str(recipe_created_event.recipe_id),
+        value=recipe_created_event,
+    )
 
 
 async def get_patch_statement(
@@ -246,7 +323,7 @@ async def patch_recipe(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_recipe: RecipeSchema = await get_recipe(id)
+    requested_recipe: RecipeSchema = await _get_recipe_internal(id)
     if requested_recipe.author_id != bearer_claims.id:
         logger.error(
             f"Unauthorized deletion attempt of recipe: {requested_recipe.id} from user: {bearer_claims.id}"
@@ -260,6 +337,17 @@ async def patch_recipe(
         await session.execute(statement)
 
     response.headers["Location"] = f"/recipe/{requested_recipe.id}"
+
+    recipe_modified_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.MODIFIED,
+        actor_id=bearer_claims.id,
+        recipe_id=requested_recipe.id,
+    )
+    producer.produce(
+        "recipe.modified",
+        key=str(requested_recipe.id),
+        value=recipe_modified_event,
+    )
 
 
 @app.delete(
@@ -279,7 +367,7 @@ async def delete_recipe(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_recipe: RecipeSchema = await get_recipe(id)
+    requested_recipe: RecipeSchema = await _get_recipe_internal(id)
     if requested_recipe.author_id != bearer_claims.id:
         logger.error(
             f"Unauthorized deletion attempt of recipe: {requested_recipe.id} from user: {bearer_claims.id}"
@@ -293,20 +381,19 @@ async def delete_recipe(
     statement.bind(0, id)
     await session.execute(statement)
 
+    recipe_deleted_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.DELETED,
+        actor_id=bearer_claims.id,
+        recipe_id=requested_recipe.id,
+    )
+    producer.produce(
+        "recipe.deleted",
+        key=str(requested_recipe.id),
+        value=recipe_deleted_event,
+    )
 
-@app.get(
-    "/variation/{id}", status_code=status.HTTP_200_OK, operation_id="get_variation"
-)
-async def get_variation(id: int) -> VariationSchema:
-    """Retrieves a variation.
 
-    Args:
-        id: The identifier for the requested Variation resource.
-    Returns:
-        A VariationSchema, containing the requested Variation data.
-    Raises:
-        HTTPException: The requested Variation resource could not be retrieved.
-    """
+async def _get_variation_internal(id: int) -> VariationSchema:
     prepared: PreparedStatement = await session.create_prepared(
         "SELECT * FROM variation WHERE id=?"
     )
@@ -332,6 +419,36 @@ async def get_variation(id: int) -> VariationSchema:
         return VariationSchema(**variation_schema_dict)
 
 
+@app.get(
+    "/variation/{id}", status_code=status.HTTP_200_OK, operation_id="get_variation"
+)
+async def get_variation(
+    id: int, bearer_claims: BearerClaims = Depends(authenticate)
+) -> VariationSchema:
+    """Retrieves a variation.
+
+    Args:
+        id: The identifier for the requested Variation resource.
+    Returns:
+        A VariationSchema, containing the requested Variation data.
+    Raises:
+        HTTPException: The requested Variation resource could not be retrieved.
+    """
+    variation_schema: VariationSchema = await _get_variation_internal(id)
+    variation_viewed_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.VIEWED,
+        actor_id=bearer_claims.id,
+        recipe_id=variation_schema.id,
+    )
+    producer.produce(
+        "variation.viewed",
+        key=str(variation_schema.id),
+        value=variation_viewed_event,
+    )
+
+    return variation_schema
+
+
 @app.post(
     "/variation", status_code=status.HTTP_201_CREATED, operation_id="create_variation"
 )
@@ -350,8 +467,8 @@ async def post_variation(
     Raises:
         HTTPException: A recipe with the recipe_id in the request was not found.
     """
-    requested_recipe: RecipeSchema = await get_recipe(
-        variation_create_request.recipe_id
+    requested_recipe: RecipeSchema = await _get_recipe_internal(
+        variation_create_request.recipe_id,
     )
     if requested_recipe is None:
         raise HTTPException(
@@ -380,6 +497,17 @@ async def post_variation(
 
     response.headers["Location"] = f"/variation/{variation_id}"
 
+    variation_created_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.CREATED,
+        actor_id=bearer_claims.id,
+        recipe_id=variation_id,
+    )
+    producer.produce(
+        "variation.created",
+        key=str(variation_id),
+        value=variation_created_event,
+    )
+
 
 @app.patch(
     "/variation/{id}",
@@ -404,7 +532,7 @@ async def patch_variation(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_variation: VariationSchema = await get_variation(id)
+    requested_variation: VariationSchema = await _get_variation_internal(id)
     if requested_variation.author_id != bearer_claims.id:
         logger.error(
             f"Unauthorized deletion attempt of variation: {requested_variation.id} from user: {bearer_claims.id}"
@@ -418,6 +546,17 @@ async def patch_variation(
         await session.execute(statement)
 
     response.headers["Location"] = f"/variation/{requested_variation.id}"
+
+    variation_modified_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.MODIFIED,
+        actor_id=bearer_claims.id,
+        recipe_id=requested_variation.id,
+    )
+    producer.produce(
+        "variation.modified",
+        key=str(requested_variation.id),
+        value=variation_modified_event,
+    )
 
 
 @app.delete(
@@ -439,7 +578,7 @@ async def delete_variation(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_variation: VariationSchema = await get_variation(id)
+    requested_variation: VariationSchema = await _get_variation_internal(id)
     if requested_variation.author_id != bearer_claims.id:
         logger.error(
             f"Unauthorized deletion attempt of variation: {requested_variation.id} from user: {bearer_claims.id}"
@@ -452,3 +591,14 @@ async def delete_variation(
     statement: Statement = prepared.bind()
     statement.bind(0, id)
     await session.execute(statement)
+
+    variation_deleted_event: RecipeEvent = RecipeEvent(
+        event_type=RecipeEventType.DELETED,
+        actor_id=bearer_claims.id,
+        recipe_id=requested_variation.id,
+    )
+    producer.produce(
+        "variation.deleted",
+        key=str(requested_variation.id),
+        value=variation_deleted_event,
+    )

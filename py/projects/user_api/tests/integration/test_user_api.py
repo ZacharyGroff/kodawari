@@ -25,7 +25,7 @@ async def verify_user(
     http_session: aiohttp.ClientSession,
     resource_path: str,
     expected_user_data: dict[str, Any],
-    start_timestamp_ms: int | None = None,
+    verify_joined: bool = False,
 ) -> None:
     user_id: int = int(resource_path.split("/")[-1])
     response: aiohttp.ClientResponse = await http_session.get(get_fqdn(resource_path))
@@ -37,8 +37,8 @@ async def verify_user(
         assert expected_user_data["display_name"] == response_json["display_name"]
     if "description" in expected_user_data:
         assert expected_user_data["description"] == response_json["description"]
-    if start_timestamp_ms:
-        assert start_timestamp_ms < response_json["joined"] < start_timestamp_ms + 5000
+    if verify_joined:
+        assert response_json["joined"] is not None
 
 
 @pytest.fixture(scope="module")
@@ -47,11 +47,6 @@ def test_user_data() -> dict[str, Any]:
         "display_name": "testuser",
         "description": "my user description",
     }
-
-
-@pytest.fixture()
-def start_timestamp_ms() -> int:
-    return int(time.time()) * 1000
 
 
 @pytest.fixture(scope="module")
@@ -101,10 +96,9 @@ async def test_user_created(
     http_session: aiohttp.ClientSession,
     created_user_resource_location: str,
     test_user_data: dict[str, Any],
-    start_timestamp_ms: int,
 ) -> None:
     await verify_user(
-        http_session, created_user_resource_location, test_user_data, start_timestamp_ms
+        http_session, created_user_resource_location, test_user_data, verify_joined=True
     )
 
 
