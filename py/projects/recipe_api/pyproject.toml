@@ -15,7 +15,7 @@ kodawari-authentication = {path = "../../lib/kodawari.authentication", develop =
 kodawari-models = {path = "../../lib/kodawari.models", develop = true}
 kodawari-logging-utilities = {path = "../../lib/kodawari.logging_utilities", develop = true}
 kodawari-identity = {path = "../../lib/kodawari.identity", develop = true}
-confluent-kafka = "^2.0.2"
+kodawari-kafka = {path = "../../lib/kodawari.kafka", develop = true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"
