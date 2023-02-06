@@ -1,4 +1,3 @@
-from json import dumps
 from logging import DEBUG, Logger
 from os import getenv
 from typing import Any, Generator
@@ -13,17 +12,14 @@ from acsylla import (
     create_cluster,
 )
 from authentication.authentication import BearerClaims, authenticate
-from confluent_kafka import SerializingProducer
-from confluent_kafka.serialization import StringSerializer
+from event_streaming.models import RecipeEvent, RecipeEventEncoder, RecipeEventType
+from event_streaming.utilities import EventProducer, get_event_producer
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.openapi.utils import get_openapi
 from identity import utilities
 from logging_utilities.utilities import get_logger
 from models.recipe import (
     RecipeCreateRequest,
-    RecipeEvent,
-    RecipeEventEncoder,
-    RecipeEventType,
     RecipePatchRequest,
     RecipeSchema,
     VariationCreateRequest,
@@ -35,7 +31,7 @@ app: FastAPI = FastAPI()
 logger: Logger
 id_generator: Generator[int, None, None]
 session: Session
-producer: SerializingProducer
+producer: EventProducer
 
 
 def custom_openapi():
@@ -103,45 +99,6 @@ async def get_cassandra_session() -> Session:
     return session
 
 
-def get_kafka_producer() -> SerializingProducer:
-    """Retrieves kafka producer, configured for the current environment.
-
-    Returns:
-        A confluent_kafka.Producer object.
-    Raises:
-        Exception: KAFKA_BROKER_NAME is not set.
-        Exception: KAFKA_BROKER_PORT is not set.
-        Exception: MACHINE_INSTANCE_IDENTIFIER is not set.
-    """
-    kafka_broker_name: str | None = getenv("KAFKA_BROKER_NAME")
-    if kafka_broker_name is None:
-        log_message: str = "KAFKA_BROKER_NAME is not set"
-        logger.error(log_message)
-        raise Exception(log_message)
-
-    kafka_broker_port: str | None = getenv("KAFKA_BROKER_PORT")
-    if kafka_broker_port is None:
-        log_message: str = "KAFKA_BROKER_PORT is not set"
-        logger.error(log_message)
-        raise Exception(log_message)
-
-    machine_instance_identifier: str | None = getenv("MACHINE_INSTANCE_IDENTIFIER")
-    if machine_instance_identifier is None:
-        log_message: str = "MACHINE_INSTANCE_IDENTIFIER is not set"
-        logger.error(log_message)
-        raise Exception(log_message)
-
-    kafka_config: dict[str, Any] = {
-        "bootstrap.servers": f"{kafka_broker_name}:{kafka_broker_port}",
-        "client.id": machine_instance_identifier,
-        "key.serializer": StringSerializer("utf-8"),
-        "value.serializer": lambda recipe_event, _: dumps(
-            recipe_event, cls=RecipeEventEncoder
-        ).encode("utf-8"),
-    }
-    return SerializingProducer(kafka_config)
-
-
 @app.on_event("startup")
 async def on_startup():
     """Prepares API for requests.
@@ -150,11 +107,17 @@ async def on_startup():
     """
     global app, id_generator, logger, producer, session
 
-    app.openapi = custom_openapi
     logger = get_logger(__name__, DEBUG)
-    id_generator = get_id_generator()
-    producer = get_kafka_producer()
-    session = await get_cassandra_session()
+    try:
+        app.openapi = custom_openapi
+        id_generator = get_id_generator()
+        producer = get_event_producer(
+            RecipeEventEncoder, error_cb=lambda x: logger.warn(x)
+        )
+        session = await get_cassandra_session()
+    except Exception as ex:
+        logger.error("An unexpected error has occurred during startup.")
+        raise ex
 
 
 @app.get("/health", operation_id="get_health")

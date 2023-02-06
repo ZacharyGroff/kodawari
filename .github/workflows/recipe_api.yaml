@@ -9,6 +9,7 @@ on:
       - py/projects/recipe_api/**
       - py/lib/kodawari.models/models/recipe.py
       - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.event_streaming/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
       - tools/cassandra/kodawari_keyspace.cql
@@ -23,6 +24,7 @@ on:
       - py/projects/recipe_api/**
       - py/lib/kodawari.models/models/recipe.py
       - py/lib/kodawari.authentication/**
+      - py/lib/kodawari.event_streaming/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
       - tools/cassandra/kodawari_keyspace.cql

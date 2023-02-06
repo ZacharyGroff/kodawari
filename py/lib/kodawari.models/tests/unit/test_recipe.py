@@ -1,13 +1,6 @@
-import json
 from typing import Any
 
-from models.recipe import (
-    RecipeEvent,
-    RecipeEventEncoder,
-    RecipeEventType,
-    RecipeSchema,
-    VariationSchema,
-)
+from models.recipe import RecipeSchema, VariationSchema
 from pytest import fixture
 
 
@@ -66,26 +59,3 @@ def test_variation_schema_success(expected_variation_schema) -> None:
     assert expected_variation_schema["notes"] == variation_schema.notes
     assert expected_variation_schema["views"] == variation_schema.views
     assert expected_variation_schema["vote_diff"] == variation_schema.vote_diff
-
-
-@fixture
-def expected_recipe_event() -> dict[str, Any]:
-    return {
-        "event_type": RecipeEventType.VIEWED,
-        "actor_id": 4,
-        "recipe_id": 5,
-    }
-
-
-def test_recipe_event_success(expected_recipe_event) -> None:
-    recipe_event: RecipeEvent = RecipeEvent(**expected_recipe_event)
-
-    assert expected_recipe_event["event_type"] == recipe_event.event_type
-    assert expected_recipe_event["actor_id"] == recipe_event.actor_id
-    assert expected_recipe_event["recipe_id"] == recipe_event.recipe_id
-
-
-def test_recipe_event_encoder(expected_recipe_event) -> None:
-    expected: str = '{"event_type": 1, "actor_id": 4, "recipe_id": 5}'
-    recipe_event: RecipeEvent = RecipeEvent(**expected_recipe_event)
-    assert expected == json.dumps(recipe_event, cls=RecipeEventEncoder)
