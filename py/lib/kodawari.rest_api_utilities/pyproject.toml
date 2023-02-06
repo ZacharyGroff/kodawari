@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "kodawari.rest_api_utilities"
+version = "0.1.0"
+description = "A package for housing utilities that implement common rest api functionality."
+authors = ["Zachary Groff <groff.zackm@gmail.com>"]
+readme = "README.md"
+packages = [{include = "rest_api_utilities"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.89.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+pyright = "^1.1.288"
+isort = "^5.11.4"
+ssort = "^0.11.6"
+black = "^22.12.0"
+darglint = "^1.8.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

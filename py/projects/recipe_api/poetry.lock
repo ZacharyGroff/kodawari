@@ -595,6 +595,23 @@ type = "directory"
 url = "../../lib/kodawari.models"
 
 [[package]]
+name = "kodawari-rest-api-utilities"
+version = "0.1.0"
+description = "A package for housing utilities that implement common rest api functionality."
+category = "main"
+optional = false
+python-versions = "^3.11"
+files = []
+develop = true
+
+[package.dependencies]
+fastapi = "^0.89.1"
+
+[package.source]
+type = "directory"
+url = "../../lib/kodawari.rest_api_utilities"
+
+[[package]]
 name = "multidict"
 version = "6.0.4"
 description = "multidict implementation"
@@ -1114,4 +1131,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "3ea3705ac9f614c98801298996d16ec3bc860cdece0adcb8722a24790c611449"
+content-hash = "02f5a4d604c36fa09445c77479d9a99e776a503fb8afb777f6ac688a68b95951"

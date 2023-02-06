@@ -15,7 +15,6 @@ from authentication.authentication import BearerClaims, authenticate
 from event_streaming.models import RecipeEvent, RecipeEventEncoder, RecipeEventType
 from event_streaming.utilities import EventProducer, get_event_producer
 from fastapi import Depends, FastAPI, HTTPException, Response, status
-from fastapi.openapi.utils import get_openapi
 from identity import utilities
 from logging_utilities.utilities import get_logger
 from models.recipe import (
@@ -26,25 +25,14 @@ from models.recipe import (
     VariationPatchRequest,
     VariationSchema,
 )
+from rest_api_utilities.fastapi import get_custom_openapi_wrapper, health_router
 
 app: FastAPI = FastAPI()
+app.include_router(health_router)
 logger: Logger
 id_generator: Generator[int, None, None]
 session: Session
 producer: EventProducer
-
-
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-    openapi_schema = get_openapi(
-        title="Kodawari Recipe API",
-        version="0.1.0",
-        description="Provides CRUD routes for managing RecipeSchema and VariationSchema objects.",
-        routes=app.routes,
-    )
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
 
 
 async def get_cassandra_session() -> Session:
@@ -84,7 +72,12 @@ async def on_startup():
 
     logger = get_logger(__name__, DEBUG)
     try:
-        app.openapi = custom_openapi
+        app.openapi = get_custom_openapi_wrapper(
+            app,
+            title="Kodawari Recipe API",
+            version="0.1.0",
+            description="Provides CRUD routes for managing RecipeSchema and VariationSchema objects.",
+        )
         id_generator = utilities.get_id_generator()
         producer = get_event_producer(
             RecipeEventEncoder, error_cb=lambda x: logger.warn(x)
@@ -93,16 +86,6 @@ async def on_startup():
     except Exception as ex:
         logger.error("An unexpected error has occurred during startup.")
         raise ex
-
-
-@app.get("/health", operation_id="get_health")
-async def health() -> str:
-    """Retrieves the health status of the API.
-
-    Returns:
-        A string of "healthy" if the API is healthy.
-    """
-    return "healthy"
 
 
 async def _get_recipe_internal(id: int) -> RecipeSchema:
