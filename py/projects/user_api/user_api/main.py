@@ -37,31 +37,6 @@ def custom_openapi():
     return app.openapi_schema
 
 
-def get_id_generator() -> Generator[int, None, None]:
-    """Retrieves an identity generator.
-
-    Retrieves an identity generator using the instance identifier value specified by the environment variable MACHINE_INSTANCE_IDENTIFIER.
-
-    Returns:
-        An identity.utilities.id_generator.
-    Raises:
-        Exception: MACHINE_INSTANCE_IDENTIFIER is not set.
-        Exception: MACHINE_INSTANCE_IDENTIFIER cannot be casted to an integer.
-    """
-    machine_instance_identifier: str | None = getenv("MACHINE_INSTANCE_IDENTIFIER")
-    if machine_instance_identifier is None:
-        log_message: str = "MACHINE_INSTANCE_IDENTIFIER is not set"
-        logger.error(log_message)
-        raise Exception(log_message)
-
-    if not machine_instance_identifier.isdigit():
-        log_message: str = "MACHINE_INSTANCE_IDENTIFIER cannot be casted to an integer"
-        logger.error(log_message)
-        raise Exception(log_message)
-
-    return utilities.id_generator(int(machine_instance_identifier))
-
-
 async def get_cassandra_session() -> Session:
     """Retrieves an acsylla Session object, for accessing Cassandra.
 
@@ -97,10 +72,14 @@ async def on_startup():
     """
     global app, id_generator, logger, session
 
-    app.openapi = custom_openapi
     logger = get_logger(__name__, DEBUG)
-    id_generator = get_id_generator()
-    session = await get_cassandra_session()
+    try:
+        app.openapi = custom_openapi
+        id_generator = utilities.get_id_generator()
+        session = await get_cassandra_session()
+    except Exception as ex:
+        logger.error("An unexpected error has occurred during startup.")
+        raise ex
 
 
 @app.get("/health", operation_id="get_health")
