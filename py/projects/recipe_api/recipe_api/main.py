@@ -15,12 +15,11 @@ from authentication.authentication import BearerClaims, authenticate
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.openapi.utils import get_openapi
 from identity import utilities
+from kafka.models import RecipeEvent, RecipeEventEncoder, RecipeEventType
+from kafka.utilities import EventProducer, get_event_producer
 from logging_utilities.utilities import get_logger
 from models.recipe import (
     RecipeCreateRequest,
-    RecipeEvent,
-    RecipeEventEncoder,
-    RecipeEventType,
     RecipePatchRequest,
     RecipeSchema,
     VariationCreateRequest,
@@ -32,7 +31,7 @@ app: FastAPI = FastAPI()
 logger: Logger
 id_generator: Generator[int, None, None]
 session: Session
-producer: SerializingProducer
+producer: EventProducer
 
 
 def custom_openapi():
@@ -99,6 +98,7 @@ async def get_cassandra_session() -> Session:
 
     return session
 
+
 @app.on_event("startup")
 async def on_startup():
     """Prepares API for requests.
@@ -107,11 +107,17 @@ async def on_startup():
     """
     global app, id_generator, logger, producer, session
 
-    app.openapi = custom_openapi
     logger = get_logger(__name__, DEBUG)
-    id_generator = get_id_generator()
-    producer = get_kafka_producer()
-    session = await get_cassandra_session()
+    try:
+        app.openapi = custom_openapi
+        id_generator = get_id_generator()
+        producer = get_event_producer(
+            RecipeEventEncoder, error_cb=lambda x: logger.warn(x)
+        )
+        session = await get_cassandra_session()
+    except Exception as ex:
+        logger.error("An unexpected error has occurred during startup.")
+        raise ex
 
 
 @app.get("/health", operation_id="get_health")

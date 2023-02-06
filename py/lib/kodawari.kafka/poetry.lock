@@ -170,23 +170,6 @@ plugins = ["setuptools"]
 requirements-deprecated-finder = ["pip-api", "pipreqs"]
 
 [[package]]
-name = "kodawari-models"
-version = "0.1.0"
-description = "A package to house models shared by kodawari services"
-category = "main"
-optional = false
-python-versions = "^3.11"
-files = []
-develop = true
-
-[package.dependencies]
-pydantic = "^1.10.4"
-
-[package.source]
-type = "directory"
-url = "../kodawari.models"
-
-[[package]]
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
@@ -409,4 +392,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "5388f889cddd0a6d3b9336cba2c8ef73c618c90f6bc7edf3ff141e8e51299990"
+content-hash = "6501e5909118aea44a5d446c4d2095eb21477e876500133e0ee1116029c95a10"

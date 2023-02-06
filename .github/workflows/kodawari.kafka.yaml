@@ -1,0 +1,38 @@
+name: kodawari.kafka test
+run-name: ${{ github.actor }} is testing kodawari.kafka
+on:
+  pull_request:
+    paths:
+      - .github/actions/setup_python/action.yml
+      - .github/actions/test_python/action.yml
+      - .github/workflows/kodawari.kafka.yaml
+      - py/lib/kodawari.kafka/**
+  push:
+    branches:
+      - "main"
+    paths:
+      - .github/actions/setup_python/action.yml
+      - .github/actions/test_python/action.yml
+      - .github/workflows/kodawari.kafka.yaml
+      - py/lib/kodawari.kafka/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11.1"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: setup
+        uses: ./.github/actions/setup_python
+        with:
+          workdir: py/lib/kodawari.kafka
+      - name: test
+        uses: ./.github/actions/test_python
+        with:
+          workdir: py/lib/kodawari.kafka

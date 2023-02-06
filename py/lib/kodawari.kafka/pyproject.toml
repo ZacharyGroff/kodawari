@@ -9,7 +9,6 @@ packages = [{include = "kafka"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 confluent-kafka = "^2.0.2"
-kodawari-models = {path = "../../lib/kodawari.models", develop = true}
 pydantic = "^1.10.4"
 
 [tool.poetry.group.dev.dependencies]

@@ -1,17 +1,22 @@
 from json import JSONEncoder, dumps
 from os import getenv
-from typing import Any, Protocol, Type
+from typing import Any, Callable, Protocol, Type
 
-from confluent_kafka import SerializingProducer
+from confluent_kafka import KafkaError, SerializingProducer
 from confluent_kafka.serialization import StringSerializer
 
 
 class EventProducer(Protocol):
-    def produce(self, topic: str, key: str | bytes, value: str | bytes) -> None:
+    """A protocol exposing a produce method, to produce messages to a topic."""
+
+    def produce(self, topic: str, key: Any, value: Any) -> None:
         ...
 
 
-def get_event_producer(encoder_type: Type[JSONEncoder]) -> EventProducer:
+def get_event_producer(
+    encoder_type: Type[JSONEncoder],
+    error_cb: Callable[[KafkaError], Any] | None = None,
+) -> EventProducer:
     """Retrieves an EventProducer, configured for the current environment.
 
     Returns:
@@ -40,5 +45,6 @@ def get_event_producer(encoder_type: Type[JSONEncoder]) -> EventProducer:
         "value.serializer": lambda event, _: dumps(event, cls=encoder_type).encode(
             "utf-8"
         ),
+        "error_cb": error_cb,
     }
     return SerializingProducer(kafka_config)
