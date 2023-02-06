@@ -3,7 +3,7 @@ from typing import Any
 
 from pytest import fixture
 
-from kafka.models import RecipeEvent, RecipeEventEncoder, RecipeEventType
+from event_streaming.models import RecipeEvent, RecipeEventEncoder, RecipeEventType
 
 
 @fixture

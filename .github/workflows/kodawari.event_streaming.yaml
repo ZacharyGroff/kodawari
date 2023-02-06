@@ -1,20 +1,20 @@
-name: kodawari.kafka test
-run-name: ${{ github.actor }} is testing kodawari.kafka
+name: kodawari.event_streaming test
+run-name: ${{ github.actor }} is testing kodawari.event_streaming
 on:
   pull_request:
     paths:
       - .github/actions/setup_python/action.yml
       - .github/actions/test_python/action.yml
-      - .github/workflows/kodawari.kafka.yaml
-      - py/lib/kodawari.kafka/**
+      - .github/workflows/kodawari.event_streaming.yaml
+      - py/lib/kodawari.event_streaming/**
   push:
     branches:
       - "main"
     paths:
       - .github/actions/setup_python/action.yml
       - .github/actions/test_python/action.yml
-      - .github/workflows/kodawari.kafka.yaml
-      - py/lib/kodawari.kafka/**
+      - .github/workflows/kodawari.event_streaming.yaml
+      - py/lib/kodawari.event_streaming/**
 
 jobs:
   build:
@@ -31,8 +31,8 @@ jobs:
       - name: setup
         uses: ./.github/actions/setup_python
         with:
-          workdir: py/lib/kodawari.kafka
+          workdir: py/lib/kodawari.event_streaming
       - name: test
         uses: ./.github/actions/test_python
         with:
-          workdir: py/lib/kodawari.kafka
+          workdir: py/lib/kodawari.event_streaming

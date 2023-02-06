@@ -12,11 +12,11 @@ from acsylla import (
     create_cluster,
 )
 from authentication.authentication import BearerClaims, authenticate
+from event_streaming.models import RecipeEvent, RecipeEventEncoder, RecipeEventType
+from event_streaming.utilities import EventProducer, get_event_producer
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.openapi.utils import get_openapi
 from identity import utilities
-from kafka.models import RecipeEvent, RecipeEventEncoder, RecipeEventType
-from kafka.utilities import EventProducer, get_event_producer
 from logging_utilities.utilities import get_logger
 from models.recipe import (
     RecipeCreateRequest,

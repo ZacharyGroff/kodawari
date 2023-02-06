@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "kodawari.kafka"
+name = "kodawari.event_streaming"
 version = "0.1.0"
-description = "A package for kodawari kafka utilities"
+description = "A package for managing event streaming within kodawari services."
 authors = ["Zachary Groff <groff.zackm@gmail.com>"]
 readme = "README.md"
-packages = [{include = "kafka"}]
+packages = [{include = "event_streaming"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"

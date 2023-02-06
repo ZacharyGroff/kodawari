@@ -1,12 +1,14 @@
 from unittest.mock import call, patch
 
-from kafka.models import RecipeEventEncoder
-from kafka.utilities import EventProducer, get_event_producer
+from event_streaming.models import RecipeEventEncoder
+from event_streaming.utilities import EventProducer, get_event_producer
 
 
 def test_get_event_producer() -> None:
-    with patch("kafka.utilities.getenv") as getenv_mock:
-        with patch("kafka.utilities.SerializingProducer") as serializing_producer_mock:
+    with patch("event_streaming.utilities.getenv") as getenv_mock:
+        with patch(
+            "event_streaming.utilities.SerializingProducer"
+        ) as serializing_producer_mock:
             expected_serializing_producer_return_value: str = "test"
             serializing_producer_mock.return_value = (
                 expected_serializing_producer_return_value
