@@ -11,6 +11,11 @@ from acsylla import (
     create_cluster,
 )
 
+_cassandra_cluster_name_environment_variable: str = "CASSANDRA_CLUSTER_NAME"
+_connection_timeout_seconds: int = 30
+_request_timeout_seconds: int = 30
+_resolve_timeout_seconds: int = 10
+
 
 async def get_cassandra_session(keyspace_name: str) -> Session:
     """Retrieves an acsylla Session object, for accessing Cassandra.
@@ -24,15 +29,17 @@ async def get_cassandra_session(keyspace_name: str) -> Session:
     Raises:
         Exception: CASSANDRA_CLUSTER_NAME is not set.
     """
-    cassandra_cluster_name: str | None = getenv("CASSANDRA_CLUSTER_NAME")
+    cassandra_cluster_name: str | None = getenv(
+        _cassandra_cluster_name_environment_variable
+    )
     if cassandra_cluster_name is None:
-        raise Exception("CASSANDRA_CLUSTER_NAME is not set")
+        raise Exception(f"{_cassandra_cluster_name_environment_variable} is not set")
 
     cluster: Cluster = create_cluster(
         [cassandra_cluster_name],
-        connect_timeout=30,
-        request_timeout=30,
-        resolve_timeout=10,
+        connect_timeout=_connection_timeout_seconds,
+        request_timeout=_request_timeout_seconds,
+        resolve_timeout=_resolve_timeout_seconds,
     )
     session = await cluster.create_session(keyspace=keyspace_name)
 
