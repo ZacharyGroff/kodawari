@@ -1,3 +1,4 @@
+from os import getenv
 from time import sleep, time
 from typing import Generator
 
@@ -116,3 +117,31 @@ def id_generator(instance_id: int) -> Generator[int, None, None]:
         shifted_timestamp: int = current_timestamp << _instance_bits
         id: int = ((shifted_timestamp | instance_id) << _sequence_bits) | sequence
         yield id
+
+
+_machine_instance_identifier_environment_variable: str = "MACHINE_INSTANCE_IDENTIFIER"
+
+
+def get_id_generator() -> Generator[int, None, None]:
+    """Retrieves an identity generator.
+
+    Retrieves an identity generator using the instance identifier value specified by the environment variable MACHINE_INSTANCE_IDENTIFIER.
+
+    Returns:
+        An identity.utilities.id_generator.
+    Raises:
+        Exception: MACHINE_INSTANCE_IDENTIFIER is not set.
+        Exception: MACHINE_INSTANCE_IDENTIFIER cannot be casted to an integer.
+    """
+    machine_instance_identifier: str | None = getenv(
+        _machine_instance_identifier_environment_variable
+    )
+    if machine_instance_identifier is None:
+        log_message: str = "MACHINE_INSTANCE_IDENTIFIER is not set"
+        raise Exception(log_message)
+
+    if not machine_instance_identifier.isdigit():
+        log_message: str = "MACHINE_INSTANCE_IDENTIFIER cannot be casted to an integer"
+        raise Exception(log_message)
+
+    return id_generator(int(machine_instance_identifier))

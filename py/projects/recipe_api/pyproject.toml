@@ -16,6 +16,8 @@ kodawari-models = {path = "../../lib/kodawari.models", develop = true}
 kodawari-logging-utilities = {path = "../../lib/kodawari.logging_utilities", develop = true}
 kodawari-identity = {path = "../../lib/kodawari.identity", develop = true}
 kodawari-event-streaming = {path = "../../lib/kodawari.event_streaming", develop = true}
+kodawari-rest-api-utilities = {path = "../../lib/kodawari.rest_api_utilities", develop = true}
+kodawari-database = {path = "../../lib/kodawari.database", extras = ["cassandra"], develop = true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"

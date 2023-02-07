@@ -10,7 +10,9 @@ on:
       - py/lib/kodawari.authentication/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
+      - py/lib/kodawari.rest_api_utilities/**
       - py/lib/kodawari.models/models/user.py
+      - py/lib/kodawari.database/database/cassandra.py
       - tools/cassandra/kodawari_keyspace.cql
       - tools/cassandra/user_schema.cql
   push:
@@ -24,7 +26,9 @@ on:
       - py/lib/kodawari.authentication/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
+      - py/lib/kodawari.rest_api_utilities/**
       - py/lib/kodawari.models/models/user.py
+      - py/lib/kodawari.database/database/cassandra.py
       - tools/cassandra/kodawari_keyspace.cql
       - tools/cassandra/user_schema.cql
 

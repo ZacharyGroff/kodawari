@@ -7,11 +7,13 @@ on:
       - .github/actions/test_python/action.yml
       - .github/workflows/recipe_api.yaml
       - py/projects/recipe_api/**
-      - py/lib/kodawari.models/models/recipe.py
       - py/lib/kodawari.authentication/**
       - py/lib/kodawari.event_streaming/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
+      - py/lib/kodawari.rest_api_utilities/**
+      - py/lib/kodawari.models/models/recipe.py
+      - py/lib/kodawari.database/database/cassandra.py
       - tools/cassandra/kodawari_keyspace.cql
       - tools/cassandra/recipe_schema.cql
   push:
@@ -22,11 +24,13 @@ on:
       - .github/actions/test_python/action.yml
       - .github/workflows/recipe_api.yaml
       - py/projects/recipe_api/**
-      - py/lib/kodawari.models/models/recipe.py
       - py/lib/kodawari.authentication/**
       - py/lib/kodawari.event_streaming/**
       - py/lib/kodawari.identity/**
       - py/lib/kodawari.logging_utilities/**
+      - py/lib/kodawari.rest_api_utilities/**
+      - py/lib/kodawari.models/models/recipe.py
+      - py/lib/kodawari.database/database/cassandra.py
       - tools/cassandra/kodawari_keyspace.cql
       - tools/cassandra/recipe_schema.cql
 
