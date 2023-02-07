@@ -31,8 +31,8 @@ logger: Logger
 id_generator: Generator[int, None, None]
 producer: EventProducer
 session: Session
-__recipe_table_name: str = "recipe"
-__variation_table_name: str = "variation"
+recipe_table_name: str = "recipe"
+variation_table_name: str = "variation"
 
 
 @app.on_event("startup")
@@ -75,7 +75,7 @@ async def get_recipe(
         HTTPException: The requested Recipe resource could not be retrieved.
     """
     recipe_schema_dict: dict[str, Any] | None = await get_resource_by_id(
-        session, __recipe_table_name, id
+        session, recipe_table_name, id
     )
     if recipe_schema_dict is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -121,7 +121,7 @@ async def post_recipe(
         recipe_create_request.name,
         recipe_create_request.description,
     ]
-    await create_resource(session, __recipe_table_name, column_names, values)
+    await create_resource(session, recipe_table_name, column_names, values)
 
     response.headers["Location"] = f"/recipe/{recipe_id}"
 
@@ -159,7 +159,7 @@ async def patch_recipe(
         HTTPException: The request is not authorized.
     """
     requested_recipe_dict: dict[str, Any] | None = await get_resource_by_id(
-        session, __recipe_table_name, id
+        session, recipe_table_name, id
     )
     if requested_recipe_dict is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -170,7 +170,7 @@ async def patch_recipe(
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
-    await patch_resource(session, __recipe_table_name, recipe_patch_request.dict(), id)
+    await patch_resource(session, recipe_table_name, recipe_patch_request.dict(), id)
     response.headers["Location"] = f"/recipe/{id}"
 
     recipe_modified_event: RecipeEvent = RecipeEvent(
@@ -203,7 +203,7 @@ async def delete_recipe(
         HTTPException: The request is not authorized.
     """
     requested_recipe_dict: dict[str, Any] | None = await get_resource_by_id(
-        session, __recipe_table_name, id
+        session, recipe_table_name, id
     )
     if requested_recipe_dict is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -214,7 +214,7 @@ async def delete_recipe(
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
-    await delete_resource_by_id(session, __recipe_table_name, id)
+    await delete_resource_by_id(session, recipe_table_name, id)
 
     recipe_deleted_event: RecipeEvent = RecipeEvent(
         event_type=RecipeEventType.DELETED,
@@ -245,7 +245,7 @@ async def get_variation(
     """
 
     variation_schema_dict: dict[str, Any] | None = await get_resource_by_id(
-        session, __variation_table_name, id
+        session, variation_table_name, id
     )
     if variation_schema_dict is None:
         raise HTTPException(status_code=404, detail="Variation not found")
@@ -285,7 +285,7 @@ async def post_variation(
         HTTPException: A recipe with the recipe_id in the request was not found.
     """
     requested_recipe_dict: dict[str, Any] | None = await get_resource_by_id(
-        session, __recipe_table_name, variation_create_request.recipe_id
+        session, recipe_table_name, variation_create_request.recipe_id
     )
     if requested_recipe_dict is None:
         raise HTTPException(
@@ -313,7 +313,7 @@ async def post_variation(
         variation_create_request.notes,
     ]
 
-    await create_resource(session, __variation_table_name, column_names, values)
+    await create_resource(session, variation_table_name, column_names, values)
 
     response.headers["Location"] = f"/variation/{variation_id}"
 
@@ -353,7 +353,7 @@ async def patch_variation(
         HTTPException: The request is not authorized.
     """
     requested_variation_dict: dict[str, Any] | None = await get_resource_by_id(
-        session, __variation_table_name, id
+        session, variation_table_name, id
     )
     if requested_variation_dict is None:
         raise HTTPException(
@@ -368,7 +368,7 @@ async def patch_variation(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     await patch_resource(
-        session, __variation_table_name, variation_patch_request.dict(), id
+        session, variation_table_name, variation_patch_request.dict(), id
     )
 
     response.headers["Location"] = f"/variation/{id}"
@@ -405,7 +405,7 @@ async def delete_variation(
         HTTPException: The request is not authorized.
     """
     requested_variation_dict: dict[str, Any] | None = await get_resource_by_id(
-        session, __variation_table_name, id
+        session, variation_table_name, id
     )
     if requested_variation_dict is None:
         raise HTTPException(
@@ -419,7 +419,7 @@ async def delete_variation(
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
-    await delete_resource_by_id(session, __variation_table_name, id)
+    await delete_resource_by_id(session, variation_table_name, id)
 
     variation_deleted_event: RecipeEvent = RecipeEvent(
         event_type=RecipeEventType.DELETED,
