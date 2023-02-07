@@ -1,17 +1,15 @@
 from logging import DEBUG, Logger
-from os import getenv
 from typing import Any, Generator
 
-from acsylla import (
-    Cluster,
-    PreparedStatement,
-    Result,
-    Row,
-    Session,
-    Statement,
-    create_cluster,
-)
+from acsylla import Session
 from authentication.authentication import BearerClaims, authenticate
+from database.cassandra import (
+    create_resource,
+    delete_resource_by_id,
+    get_cassandra_session,
+    get_resource_by_id,
+    patch_resource,
+)
 from event_streaming.models import RecipeEvent, RecipeEventEncoder, RecipeEventType
 from event_streaming.utilities import EventProducer, get_event_producer
 from fastapi import Depends, FastAPI, HTTPException, Response, status
@@ -31,35 +29,10 @@ app: FastAPI = FastAPI()
 app.include_router(health_router)
 logger: Logger
 id_generator: Generator[int, None, None]
-session: Session
 producer: EventProducer
-
-
-async def get_cassandra_session() -> Session:
-    """Retrieves an acsylla Session object, for accessing Cassandra.
-
-    Retrieves an acsylla Session object after connecting to a cassandra cluster specified by the environment variable CASSANDRA_CLUSTER_NAME.
-
-    Returns:
-        An acsylla.Session object, for accessing Cassandra.
-    Raises:
-        Exception: CASSANDRA_CLUSTER_NAME is not set.
-    """
-    cassandra_cluster_name: str | None = getenv("CASSANDRA_CLUSTER_NAME")
-    if cassandra_cluster_name is None:
-        log_message: str = "CASSANDRA_CLUSTER_NAME is not set"
-        logger.error(log_message)
-        raise Exception(log_message)
-
-    cluster: Cluster = create_cluster(
-        [cassandra_cluster_name],
-        connect_timeout=30,
-        request_timeout=30,
-        resolve_timeout=10,
-    )
-    session = await cluster.create_session(keyspace="kodawari")
-
-    return session
+session: Session
+__recipe_table_name: str = "recipe"
+__variation_table_name: str = "variation"
 
 
 @app.on_event("startup")
@@ -82,37 +55,10 @@ async def on_startup():
         producer = get_event_producer(
             RecipeEventEncoder, error_cb=lambda x: logger.warn(x)
         )
-        session = await get_cassandra_session()
+        session = await get_cassandra_session("kodawari")
     except Exception as ex:
         logger.error("An unexpected error has occurred during startup.")
         raise ex
-
-
-async def _get_recipe_internal(id: int) -> RecipeSchema:
-    prepared: PreparedStatement = await session.create_prepared(
-        "SELECT * FROM recipe WHERE id=?"
-    )
-    statement: Statement = prepared.bind()
-    statement.bind(0, id)
-    result: Result = await session.execute(statement)
-
-    if result.count() == 0:
-        raise HTTPException(status_code=404, detail="Recipe not found")
-    elif result.count() > 1:
-        logger.error(
-            f"Multiple results returned when querying for recipe with id: {id}"
-        )
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
-        recipe_schema_row: Row | None = result.first()
-        if recipe_schema_row is None:
-            raise HTTPException(status_code=404, detail="Recipe not found")
-
-        recipe_schema_dict: dict[Any, Any] = recipe_schema_row.as_dict()
-        created_at: int = utilities.get_timestamp(recipe_schema_dict["id"])
-        recipe_schema_dict["created_at"] = created_at
-
-        return RecipeSchema(**recipe_schema_dict)
 
 
 @app.get("/recipe/{id}", status_code=status.HTTP_200_OK, operation_id="get_recipe")
@@ -128,7 +74,16 @@ async def get_recipe(
     Raises:
         HTTPException: The requested Recipe resource could not be retrieved.
     """
-    recipe_schema: RecipeSchema = await _get_recipe_internal(id)
+    recipe_schema_dict: dict[str, Any] | None = await get_resource_by_id(
+        session, __recipe_table_name, id
+    )
+    if recipe_schema_dict is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    created_at: int = utilities.get_timestamp(recipe_schema_dict["id"])
+    recipe_schema_dict["created_at"] = created_at
+    recipe_schema: RecipeSchema = RecipeSchema(**recipe_schema_dict)
+
     recipe_viewed_event: RecipeEvent = RecipeEvent(
         event_type=RecipeEventType.VIEWED,
         actor_id=bearer_claims.id,
@@ -158,21 +113,15 @@ async def post_recipe(
         recipe_create_request: The RecipeSchema properties to set on the created resource.
     """
 
-    prepared: PreparedStatement = await session.create_prepared(
-        "INSERT INTO recipe (id, author_id, name, description) VALUES (?, ?, ?, ?)"
-    )
-    statement: Statement = prepared.bind()
-
     recipe_id: int = next(id_generator)
-    arguments: list[Any] = [
+    column_names: list[str] = ["id", "author_id", "name", "description"]
+    values: list[Any] = [
         recipe_id,
         bearer_claims.id,
         recipe_create_request.name,
         recipe_create_request.description,
     ]
-    statement.bind_list(arguments)
-
-    await session.execute(statement)
+    await create_resource(session, __recipe_table_name, column_names, values)
 
     response.headers["Location"] = f"/recipe/{recipe_id}"
 
@@ -186,41 +135,6 @@ async def post_recipe(
         key=str(recipe_created_event.recipe_id),
         value=recipe_created_event,
     )
-
-
-async def get_patch_statement(
-    table_name: str, to_patch: dict[str, Any], id: int
-) -> Statement | None:
-    """Retrieves a Statement for patching.
-
-    Retrieves a Statement for patching a resource in Cassandra.
-
-    Args:
-        table_name: The name of the table to run the patch statement.
-        to_patch: A dictionary key-value pairs to include in the UPDATE statement.
-        id: The id of the resource being patched.
-
-    Returns:
-        An optional Statement for patching a resource. None if no data requires patching.
-    """
-    eligible_fields: list[str] = []
-    eligible_values: list[Any] = []
-    for key, value in to_patch.items():
-        if value is not None:
-            eligible_fields.append(key)
-            eligible_values.append(value)
-
-    if len(eligible_fields) < 1:
-        return None
-
-    fields: str = "=?, ".join(eligible_fields) + "=?"
-    prepared: PreparedStatement = await session.create_prepared(
-        f"UPDATE {table_name} SET {fields} WHERE id=? IF EXISTS",
-    )
-    statement: Statement = prepared.bind()
-    statement.bind_list(eligible_values + [id])
-
-    return statement
 
 
 @app.patch(
@@ -244,29 +158,29 @@ async def patch_recipe(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_recipe: RecipeSchema = await _get_recipe_internal(id)
-    if requested_recipe.author_id != bearer_claims.id:
+    requested_recipe_dict: dict[str, Any] | None = await get_resource_by_id(
+        session, __recipe_table_name, id
+    )
+    if requested_recipe_dict is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    if requested_recipe_dict["author_id"] != bearer_claims.id:
         logger.error(
-            f"Unauthorized deletion attempt of recipe: {requested_recipe.id} from user: {bearer_claims.id}"
+            f"Unauthorized deletion attempt of recipe: {requested_recipe_dict['id']} from user: {bearer_claims.id}"
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
-    statement: Statement | None = await get_patch_statement(
-        "recipe", recipe_patch_request.dict(), id
-    )
-    if statement is not None:
-        await session.execute(statement)
-
-    response.headers["Location"] = f"/recipe/{requested_recipe.id}"
+    await patch_resource(session, __recipe_table_name, recipe_patch_request.dict(), id)
+    response.headers["Location"] = f"/recipe/{id}"
 
     recipe_modified_event: RecipeEvent = RecipeEvent(
         event_type=RecipeEventType.MODIFIED,
         actor_id=bearer_claims.id,
-        recipe_id=requested_recipe.id,
+        recipe_id=id,
     )
     producer.produce(
         "recipe.modified",
-        key=str(requested_recipe.id),
+        key=str(id),
         value=recipe_modified_event,
     )
 
@@ -288,56 +202,30 @@ async def delete_recipe(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_recipe: RecipeSchema = await _get_recipe_internal(id)
-    if requested_recipe.author_id != bearer_claims.id:
+    requested_recipe_dict: dict[str, Any] | None = await get_resource_by_id(
+        session, __recipe_table_name, id
+    )
+    if requested_recipe_dict is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    if requested_recipe_dict["author_id"] != bearer_claims.id:
         logger.error(
-            f"Unauthorized deletion attempt of recipe: {requested_recipe.id} from user: {bearer_claims.id}"
+            f"Unauthorized deletion attempt of recipe: {id} from user: {bearer_claims.id}"
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
-    prepared: PreparedStatement = await session.create_prepared(
-        "DELETE FROM recipe WHERE id=? IF EXISTS"
-    )
-    statement: Statement = prepared.bind()
-    statement.bind(0, id)
-    await session.execute(statement)
+    await delete_resource_by_id(session, __recipe_table_name, id)
 
     recipe_deleted_event: RecipeEvent = RecipeEvent(
         event_type=RecipeEventType.DELETED,
         actor_id=bearer_claims.id,
-        recipe_id=requested_recipe.id,
+        recipe_id=id,
     )
     producer.produce(
         "recipe.deleted",
-        key=str(requested_recipe.id),
+        key=str(id),
         value=recipe_deleted_event,
     )
-
-
-async def _get_variation_internal(id: int) -> VariationSchema:
-    prepared: PreparedStatement = await session.create_prepared(
-        "SELECT * FROM variation WHERE id=?"
-    )
-    statement: Statement = prepared.bind()
-    statement.bind(0, id)
-    result: Result = await session.execute(statement)
-
-    if result.count() == 0:
-        raise HTTPException(status_code=404, detail="Variation not found")
-    elif result.count() > 1:
-        logger.error(
-            f"Multiple results returned when querying for Variation with id: {id}"
-        )
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
-        variation_schema_row: Row | None = result.first()
-        if variation_schema_row is None:
-            raise HTTPException(status_code=404, detail="Variation not found")
-
-        variation_schema_dict: dict[Any, Any] = variation_schema_row.as_dict()
-        created_at: int = utilities.get_timestamp(variation_schema_dict["id"])
-        variation_schema_dict["created_at"] = created_at
-        return VariationSchema(**variation_schema_dict)
 
 
 @app.get(
@@ -355,19 +243,27 @@ async def get_variation(
     Raises:
         HTTPException: The requested Variation resource could not be retrieved.
     """
-    variation_schema: VariationSchema = await _get_variation_internal(id)
+
+    variation_schema_dict: dict[str, Any] | None = await get_resource_by_id(
+        session, __variation_table_name, id
+    )
+    if variation_schema_dict is None:
+        raise HTTPException(status_code=404, detail="Variation not found")
+
+    created_at: int = utilities.get_timestamp(variation_schema_dict["id"])
+    variation_schema_dict["created_at"] = created_at
     variation_viewed_event: RecipeEvent = RecipeEvent(
         event_type=RecipeEventType.VIEWED,
         actor_id=bearer_claims.id,
-        recipe_id=variation_schema.id,
+        recipe_id=id,
     )
     producer.produce(
         "variation.viewed",
-        key=str(variation_schema.id),
+        key=str(id),
         value=variation_viewed_event,
     )
 
-    return variation_schema
+    return VariationSchema(**variation_schema_dict)
 
 
 @app.post(
@@ -388,22 +284,26 @@ async def post_variation(
     Raises:
         HTTPException: A recipe with the recipe_id in the request was not found.
     """
-    requested_recipe: RecipeSchema = await _get_recipe_internal(
-        variation_create_request.recipe_id,
+    requested_recipe_dict: dict[str, Any] | None = await get_resource_by_id(
+        session, __recipe_table_name, variation_create_request.recipe_id
     )
-    if requested_recipe is None:
+    if requested_recipe_dict is None:
         raise HTTPException(
             status_code=404,
-            detail="A recipe with the recipe_id in the request was not found.",
+            detail="A recipe with the provided recipe_id was not found.",
         )
 
-    prepared: PreparedStatement = await session.create_prepared(
-        "INSERT INTO variation (id, author_id, recipe_id, name, ingredients, process, notes) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    )
-    statement: Statement = prepared.bind()
-
     variation_id: int = next(id_generator)
-    arguments: list[Any] = [
+    column_names: list[str] = [
+        "id",
+        "author_id",
+        "recipe_id",
+        "name",
+        "ingredients",
+        "process",
+        "notes",
+    ]
+    values: list[Any] = [
         variation_id,
         bearer_claims.id,
         variation_create_request.recipe_id,
@@ -412,9 +312,8 @@ async def post_variation(
         variation_create_request.process,
         variation_create_request.notes,
     ]
-    statement.bind_list(arguments)
 
-    await session.execute(statement)
+    await create_resource(session, __variation_table_name, column_names, values)
 
     response.headers["Location"] = f"/variation/{variation_id}"
 
@@ -453,29 +352,35 @@ async def patch_variation(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_variation: VariationSchema = await _get_variation_internal(id)
-    if requested_variation.author_id != bearer_claims.id:
+    requested_variation_dict: dict[str, Any] | None = await get_resource_by_id(
+        session, __variation_table_name, id
+    )
+    if requested_variation_dict is None:
+        raise HTTPException(
+            status_code=404,
+            detail="A variation with the provided id was not found.",
+        )
+
+    if requested_variation_dict["author_id"] != bearer_claims.id:
         logger.error(
-            f"Unauthorized deletion attempt of variation: {requested_variation.id} from user: {bearer_claims.id}"
+            f"Unauthorized deletion attempt of variation: {id} from user: {bearer_claims.id}"
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
-    statement: Statement | None = await get_patch_statement(
-        "variation", variation_patch_request.dict(), id
+    await patch_resource(
+        session, __variation_table_name, variation_patch_request.dict(), id
     )
-    if statement is not None:
-        await session.execute(statement)
 
-    response.headers["Location"] = f"/variation/{requested_variation.id}"
+    response.headers["Location"] = f"/variation/{id}"
 
     variation_modified_event: RecipeEvent = RecipeEvent(
         event_type=RecipeEventType.MODIFIED,
         actor_id=bearer_claims.id,
-        recipe_id=requested_variation.id,
+        recipe_id=id,
     )
     producer.produce(
         "variation.modified",
-        key=str(requested_variation.id),
+        key=str(id),
         value=variation_modified_event,
     )
 
@@ -499,27 +404,30 @@ async def delete_variation(
     Raises:
         HTTPException: The request is not authorized.
     """
-    requested_variation: VariationSchema = await _get_variation_internal(id)
-    if requested_variation.author_id != bearer_claims.id:
+    requested_variation_dict: dict[str, Any] | None = await get_resource_by_id(
+        session, __variation_table_name, id
+    )
+    if requested_variation_dict is None:
+        raise HTTPException(
+            status_code=404,
+            detail="A variation with the provided id was not found.",
+        )
+
+    if requested_variation_dict["author_id"] != bearer_claims.id:
         logger.error(
-            f"Unauthorized deletion attempt of variation: {requested_variation.id} from user: {bearer_claims.id}"
+            f"Unauthorized deletion attempt of variation: {id} from user: {bearer_claims.id}"
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
-    prepared: PreparedStatement = await session.create_prepared(
-        "DELETE FROM variation WHERE id=? IF EXISTS"
-    )
-    statement: Statement = prepared.bind()
-    statement.bind(0, id)
-    await session.execute(statement)
+    await delete_resource_by_id(session, __variation_table_name, id)
 
     variation_deleted_event: RecipeEvent = RecipeEvent(
         event_type=RecipeEventType.DELETED,
         actor_id=bearer_claims.id,
-        recipe_id=requested_variation.id,
+        recipe_id=id,
     )
     producer.produce(
         "variation.deleted",
-        key=str(requested_variation.id),
+        key=str(id),
         value=variation_deleted_event,
     )
